@@ -8,77 +8,54 @@ using TagShelf.Alfred.ApiWrapper.Enumerations;
 
 namespace TagShelf.Alfred.ApiWrapper.Core
 {
-    public class HttpApiClient : IDisposable
+    /// <summary>
+    /// Encapsulates HTTP communication logic using HttpClient.
+    /// </summary>
+    public class HttpApiClient
     {
         private readonly HttpClient _httpClient;
-        private readonly string _baseAddress;
 
-        public HttpApiClient(string baseAddress)
+        /// <summary>
+        /// Initializes a new instance of the HttpApiClient class.
+        /// </summary>
+        public HttpApiClient()
         {
             _httpClient = new HttpClient();
-            _baseAddress = baseAddress;
-            _httpClient.BaseAddress = new Uri(_baseAddress);
+            // Initialize your HttpClient instance here
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="HttpApiClient"/> configured for the specified environment and authentication method.
+        /// Sets the base address of the URI used by HttpClient instances.
         /// </summary>
-        /// <param name="apiKey">The API key used for authentication.</param>
-        /// <param name="environment">The target environment of the Alfred API.</param>
-        public HttpApiClient(string apiKey, EnvironmentType environment)
+        /// <param name="baseAddress">The base address of the URI.</param>
+        public void SetBaseAddress(string baseAddress)
         {
-            _httpClient = new HttpClient();
+            _httpClient.BaseAddress = new Uri(baseAddress);
+        }
 
-            // Determine the base address based on the specified environment
-            switch (environment)
+        /// <summary>
+        /// Allows external entities to add or update an HTTP header for subsequent requests.
+        /// </summary>
+        /// <param name="name">The name of the header.</param>
+        /// <param name="value">The value of the header.</param>
+        public void AddOrUpdateHeader(string name, string value)
+        {
+            if (_httpClient.DefaultRequestHeaders.Contains(name))
             {
-                case EnvironmentType.Production:
-                    _baseAddress = "https://app.tagshelf.com/";
-                    break;
-                case EnvironmentType.Staging:
-                    _baseAddress = "https://staging.tagshelf.com/";
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(environment), environment, "Unsupported environment type.");
+                _httpClient.DefaultRequestHeaders.Remove(name);
             }
-
-            _httpClient.BaseAddress = new Uri(_baseAddress);
-
-            // Set the API key in the custom header for authentication
-            _httpClient.DefaultRequestHeaders.Add("X-TagshelfAPI-Key", apiKey);
+            _httpClient.DefaultRequestHeaders.Add(name, value);
         }
 
-        public void SetAuthenticationHeader(AuthenticationMethod method, string credential)
+        /// <summary>
+        /// Sends a POST request to the specified Uri as an asynchronous operation.
+        /// </summary>
+        /// <param name="uri">The Uri the request is sent to.</param>
+        /// <param name="content">The HTTP request content sent to the server.</param>
+        /// <returns>The HTTP response message.</returns>
+        public async Task<HttpResponseMessage> PostAsync(string uri, HttpContent content)
         {
-            switch (method)
-            {
-                case AuthenticationMethod.ApiKey:
-                    _httpClient.DefaultRequestHeaders.Add("X-TagshelfAPI-Key", credential);
-                    break;
-                case AuthenticationMethod.OAuth:
-                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", credential);
-                    break;
-                case AuthenticationMethod.HMAC:
-                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("amx", credential);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(method), method, null);
-            }
-        }
-
-        public async Task<T> GetAsync<T>(string uri)
-        {
-            var response = await _httpClient.GetAsync(uri);
-            response.EnsureSuccessStatusCode();
-            var json = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<T>(json);
-        }
-
-        // Implement PostAsync, PutAsync, DeleteAsync similarly, utilizing JSON serialization/deserialization
-
-        public void Dispose()
-        {
-            _httpClient?.Dispose();
+            return await _httpClient.PostAsync(uri, content);
         }
     }
 }
