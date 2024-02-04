@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace TagShelf.Alfred.ApiWrapper.Domains
+namespace TagShelf.Alfred.ApiWrapper.Core
 {
     /// <summary>
     /// Represents an error response from the API.
