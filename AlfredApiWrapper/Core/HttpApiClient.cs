@@ -83,17 +83,38 @@ namespace TagShelf.Alfred.ApiWrapper.Core
 
         /// <summary>
         /// Sends an HTTP request as an asynchronous operation and deserializes the JSON response to a specified type.
+        /// Handles non-2xx responses by attempting to deserialize the error response and throwing a detailed exception.
         /// </summary>
         /// <typeparam name="TResult">The type of the deserialized result.</typeparam>
         /// <param name="request">The HTTP request message to send.</param>
         /// <returns>A task that represents the asynchronous operation, containing the deserialized response.</returns>
+        /// <exception cref="ApiException">Thrown when the response indicates an error.</exception>
         private async Task<TResult> SendAsync<TResult>(HttpRequestMessage request)
         {
-            using (var response = await _httpClient.SendAsync(request).ConfigureAwait(false))
+            HttpResponseMessage response = null;
+            try
             {
-                response.EnsureSuccessStatusCode();
-                var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                return JsonConvert.DeserializeObject<TResult>(json);
+                response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    return JsonConvert.DeserializeObject<TResult>(json);
+                }
+                else
+                {
+                    var errorJson = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    var errorResult = JsonConvert.DeserializeObject<ErrorResult>(errorJson);
+                    throw new ApiException(errorResult.Error, errorResult.Message, response.StatusCode, errorJson);
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new ApiException("Network error", ex.Message, null, null, ex);
+            }
+            finally
+            {
+                response?.Dispose();
             }
         }
     }
