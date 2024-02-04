@@ -1,5 +1,6 @@
 using TagShelf.Alfred.ApiWrapper.Domains.File;
 using TagShelf.Alfred.ApiWrapper.Domains.Job;
+using TagShelf.Alfred.ApiWrapper.Domains.Tagshelf;
 
 namespace TagShelf.Alfred.ApiWrapper.Core
 {
@@ -17,5 +18,10 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         /// Provides access to file-related operations.
         /// </summary>
         FileDomain File { get; }
+
+        /// <summary>
+        /// Provides access to Tagshelf-related operations.
+        /// </summary>
+        TagshelfDomain Tagshelf { get; }
     }
 }
