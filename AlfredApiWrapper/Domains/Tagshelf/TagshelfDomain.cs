@@ -27,8 +27,7 @@ namespace TagShelf.Alfred.ApiWrapper.Domains.Tagshelf
         /// <returns>A task that, when completed, returns the operational status of the platform.</returns>
         public async Task<TagshelfStatusResult> StatusAsync()
         {
-            string responseContent = await _apiClient.GetAsync("/api/tagshelf/status");
-            return JsonConvert.DeserializeObject<TagshelfStatusResult>(responseContent);
+            return await _apiClient.GetAsync<TagshelfStatusResult>("/api/tagshelf/status").ConfigureAwait(false);            
         }
 
         /// <summary>
@@ -37,8 +36,7 @@ namespace TagShelf.Alfred.ApiWrapper.Domains.Tagshelf
         /// <returns>A task that represents the asynchronous operation. The task result contains the current user's information.</returns>
         public async Task<WhoAmIResult> WhoAmIAsync()
         {
-            string responseContent = await _apiClient.GetAsync("/api/tagshelf/who-am-i");
-            return JsonConvert.DeserializeObject<WhoAmIResult>(responseContent);
+            return await _apiClient.GetAsync<WhoAmIResult>("/api/tagshelf/who-am-i").ConfigureAwait(false);            
         }
 
         /// <summary>
@@ -47,8 +45,7 @@ namespace TagShelf.Alfred.ApiWrapper.Domains.Tagshelf
         /// <returns>A task that represents the asynchronous operation. The task result contains the ping response.</returns>
         public async Task<PingResult> PingAsync()
         {
-            string responseContent = await _apiClient.GetAsync("/api/tagshelf/ping");
-            return JsonConvert.DeserializeObject<PingResult>(responseContent);
+            return await _apiClient.GetAsync<PingResult>("/api/tagshelf/ping").ConfigureAwait(false);            
         }
     }
 }

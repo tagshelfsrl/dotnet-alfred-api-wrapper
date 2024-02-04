@@ -40,28 +40,10 @@ namespace TagShelf.Alfred.ApiWrapper.Authentication
                 new KeyValuePair<string, string>("username", _username),
                 new KeyValuePair<string, string>("password", _password),
             });
-
-            HttpResponseMessage response = null;
+            
             try
             {
-                response = await _apiClient.PostAsync("/token", content);
-
-                // Check if the response is successful (2xx)
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    throw new HttpRequestException($"Authentication failed with status code {response.StatusCode}: {errorContent}");
-                }
-
-                var responseContent = await response.Content.ReadAsStringAsync();
-                var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(responseContent);
-
-                // Validate the deserialized token response
-                if (tokenResponse == null || string.IsNullOrWhiteSpace(tokenResponse.AccessToken))
-                {
-                    throw new InvalidOperationException("Invalid token response received from the server.");
-                }
-
+                var tokenResponse  = await _apiClient.PostAsync<TokenResponse>("/token", content);
                 _apiClient.AddOrUpdateHeader("Authorization", $"Bearer {tokenResponse.AccessToken}");
             }
             catch (HttpRequestException ex)
