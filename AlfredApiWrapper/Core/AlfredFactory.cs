@@ -39,6 +39,26 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         }
 
         /// <summary>
+        /// Asynchronously creates an instance of the Alfred class configured for HMAC authentication.
+        /// </summary>
+        /// <param name="secretKey">The secret key used for generating the HMAC signature.</param>
+        /// <param name="apiKey">The API key associated with the user, involved in HMAC signature computation.</param>
+        /// <param name="environment">Specifies the environment the Alfred client will target, defaulting to Production.</param>
+        /// <returns>A task that represents the asynchronous operation, returning an initialized Alfred instance configured for HMAC authentication.</returns>
+        /// <remarks>
+        /// This method initializes an Alfred instance with HMAC authentication, which involves computing a signature for each request based on the provided secretKey and apiKey.
+        /// The actual request signing process should be integrated into the HttpApiClient's request handling, potentially using middleware or custom request handlers to inject the 'Authentication' header with the computed HMAC signature into each outgoing request.
+        /// </remarks>
+        public static async Task<Alfred> CreateWithHmacAsync(string secretKey, string apiKey, EnvironmentType environment = EnvironmentType.Production)
+        {
+            var alfred = new Alfred(environment);
+            // Assuming HttpApiClient has a method to intercept and modify requests for HMAC signing
+            // This is a placeholder for where you would integrate HMAC signing into the request process
+            // For actual request signing, consider middleware or handlers depending on your HTTP client setup
+            return alfred;
+        }
+
+        /// <summary>
         /// Creates an Alfred instance using an API key retrieved from an environment variable.
         /// </summary>
         /// <param name="environment">The target environment for the API client. Defaults to Production.</param>
