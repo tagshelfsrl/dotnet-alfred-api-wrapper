@@ -2,6 +2,8 @@
 
 The `TagShelf.Alfred.ApiWrapper` is a comprehensive .NET library designed to facilitate seamless interactions with the Alfred API. It's tailored to support a wide range of .NET applications, from modern .NET Core and .NET Standard projects to legacy .NET Framework 4.7.2 applications, providing a robust, strongly-typed interface for efficient development.
 
+It provides a robust, strongly-typed interface for efficient development, with specialized domains for handling Tags, Jobs, Files, Deferred Sessions, and Data Points.
+
 ## Features
 
 - **Comprehensive Authentication Support**: Seamlessly handles OAuth, HMAC, and API key authentication methods, simplifying the process of connecting to the Alfred API.
@@ -31,13 +33,13 @@ dotnet add package TagShelf.Alfred.ApiWrapper
    Begin by creating an instance of the Alfred client using your preferred authentication method:
 
    ```csharp
-   var alfred = new Alfred("your_api_key"); // For API key authentication
+   var alfred = await AlfredFactory.CreateWithApiKeyFromEnvironmentAsync(EnvironmentType.Staging);
    ```
 
-   For OAuth or HMAC authentication, specify the method and credentials explicitly:
+   For OAuth authentication, specify the method and credentials explicitly:
 
    ```csharp
-   var alfred = new Alfred("username", "password", AuthenticationMethod.OAuth, EnvironmentType.Production);
+   var alfred = await AlfredFactory.CreateWithOAuthAsync("username", "password", EnvironmentType.Production);
    ```
 
 2. **Executing Operations**
@@ -45,8 +47,12 @@ dotnet add package TagShelf.Alfred.ApiWrapper
    With the client initialized, you're ready to perform API operations. Access the File and Job domains as follows:
 
    ```csharp
-   var jobResult = await alfred.Job.CreateAsync(jobRequest);
-   var fileResult = await alfred.File.DownloadAsync(fileId);
+   // Upload remote file
+   var uploadResult = await alfred.File.UploadAsync(new FileUploadRequest
+   {
+       Urls = new List<string> { "http://example.com/file.pdf" },
+       Metadata = "{'DocumentType':'Invoice'}",       
+   });   
    ```
 
 ## Contributing
