@@ -1,3 +1,4 @@
+using TagShelf.Alfred.ApiWrapper.Domains.DataPoint;
 using TagShelf.Alfred.ApiWrapper.Domains.DeferredSession;
 using TagShelf.Alfred.ApiWrapper.Domains.File;
 using TagShelf.Alfred.ApiWrapper.Domains.Job;
@@ -29,5 +30,10 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         /// Provides access to deferred session-related operations.
         /// </summary>
         DeferredSessionDomain DeferredSession { get; }
+
+        /// <summary>
+        /// Provides access to data point-related operations.
+        /// </summary>
+        DataPointDomain DataPoint { get; }
     }
 }
