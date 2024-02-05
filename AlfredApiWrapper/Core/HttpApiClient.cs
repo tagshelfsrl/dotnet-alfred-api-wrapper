@@ -82,6 +82,21 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         }
 
         /// <summary>
+        /// Fetches the response for a file download request without deserializing the content, allowing direct access to the byte stream.
+        /// </summary>
+        /// <param name="uri">The URI the request is sent to.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the raw HTTP response.</returns>
+        public async Task<HttpResponseMessage> GetFileAsync(string uri)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*")); // Accept any content type
+            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            return response;
+        }
+
+
+        /// <summary>
         /// Sends an HTTP request as an asynchronous operation and deserializes the JSON response to a specified type.
         /// Handles non-2xx responses by attempting to deserialize the error response and throwing a detailed exception.
         /// </summary>
