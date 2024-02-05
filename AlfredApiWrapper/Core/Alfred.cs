@@ -1,4 +1,9 @@
 using System;
+using TagShelf.Alfred.ApiWrapper.Domains.DataPoint;
+using TagShelf.Alfred.ApiWrapper.Domains.DeferredSession;
+using TagShelf.Alfred.ApiWrapper.Domains.File;
+using TagShelf.Alfred.ApiWrapper.Domains.Job;
+using TagShelf.Alfred.ApiWrapper.Domains.Tagshelf;
 using TagShelf.Alfred.ApiWrapper.Enumerations;
 
 namespace TagShelf.Alfred.ApiWrapper.Core
@@ -6,7 +11,7 @@ namespace TagShelf.Alfred.ApiWrapper.Core
     /// <summary>
     /// Represents the main client for interacting with the Alfred API, supporting various authentication methods.
     /// </summary>
-    public class Alfred
+    public class Alfred : IAlfred
     {
         /// <summary>
         /// Gets the HttpApiClient used for all HTTP interactions.
@@ -25,6 +30,7 @@ namespace TagShelf.Alfred.ApiWrapper.Core
             ApiClient = new HttpApiClient();
             _environment = environment;
             SetBaseAddress(environment);
+            InitDomains();
         }
 
         /// <summary>
@@ -47,6 +53,26 @@ namespace TagShelf.Alfred.ApiWrapper.Core
                 throw new ArgumentException("Unsupported environment type", nameof(environment));
             }
             ApiClient.SetBaseAddress(baseUrl);
-        }        
+        }
+
+        /// <summary>
+        /// Initializes the domain-specific properties of the Alfred API wrapper.
+        /// </summary>
+        private void InitDomains()
+        {
+            Job = new JobDomain(ApiClient);
+            File = new FileDomain(ApiClient);
+            Tagshelf = new TagshelfDomain(ApiClient);
+            DeferredSession = new DeferredSessionDomain(ApiClient);
+            DataPoint = new DataPointDomain(ApiClient);
+        }
+
+        #region IAlfred implementation
+        public JobDomain Job { get; private set; }
+        public FileDomain File { get; private set; }
+        public TagshelfDomain Tagshelf { get; private set; }
+        public DeferredSessionDomain DeferredSession { get; private set; }
+        public DataPointDomain DataPoint { get; private set; }
+        #endregion
     }
 }
