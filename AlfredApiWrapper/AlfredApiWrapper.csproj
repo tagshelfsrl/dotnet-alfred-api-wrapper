@@ -4,6 +4,15 @@
     <TargetFrameworks>net472;netstandard2.0</TargetFrameworks>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
+    <PackageId>TagShelf.Alfred.ApiWrapper</PackageId>
+    <Version>0.2.0</Version>
+    <Authors>Raúl Roa (raul@tagshelf.com)</Authors>
+    <Company>Tagshelf</Company>
+    <Description>A comprehensive .NET library designed to facilitate seamless interactions with the Alfred API.</Description>
+    <PackageTags>Alfred;API;Wrapper;.NET</PackageTags>
+    <RepositoryUrl>https://github.com/tagshelfsrl/dotnet-alfred-api-wrapper</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReleaseNotes>Introducing AccountDomain with webhook setup support. See https://github.com/tagshelfsrl/dotnet-alfred-api-wrapper/releases for more details.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
