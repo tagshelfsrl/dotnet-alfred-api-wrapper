@@ -1,3 +1,4 @@
+using TagShelf.Alfred.ApiWrapper.Domains;
 using TagShelf.Alfred.ApiWrapper.Domains.DataPoint;
 using TagShelf.Alfred.ApiWrapper.Domains.DeferredSession;
 using TagShelf.Alfred.ApiWrapper.Domains.File;
@@ -11,6 +12,11 @@ namespace TagShelf.Alfred.ApiWrapper.Core
     /// </summary>
     public interface IAlfred
     {
+        /// <summary>
+        /// Provides access to account-related operations.
+        /// </summary>
+        AccountDomain Account { get; }
+
         /// <summary>
         /// Provides access to job-related operations.
         /// </summary>

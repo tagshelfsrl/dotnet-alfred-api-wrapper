@@ -1,4 +1,5 @@
 using System;
+using TagShelf.Alfred.ApiWrapper.Domains;
 using TagShelf.Alfred.ApiWrapper.Domains.DataPoint;
 using TagShelf.Alfred.ApiWrapper.Domains.DeferredSession;
 using TagShelf.Alfred.ApiWrapper.Domains.File;
@@ -60,6 +61,7 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         /// </summary>
         private void InitDomains()
         {
+            Account = new AccountDomain(ApiClient);
             Job = new JobDomain(ApiClient);
             File = new FileDomain(ApiClient);
             Tagshelf = new TagshelfDomain(ApiClient);
@@ -68,6 +70,7 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         }
 
         #region IAlfred implementation
+        public AccountDomain Account { get; private set; }
         public JobDomain Job { get; private set; }
         public FileDomain File { get; private set; }
         public TagshelfDomain Tagshelf { get; private set; }
