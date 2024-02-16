@@ -1,0 +1,17 @@
+name: "On Tag Pushed"
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  build:
+    uses: tagshelfsrl/github-actions/.github/workflows/nuget.yml@v1.13.1
+    secrets: 
+      nuget: ${{secrets.NUGET_TOKEN}}
+    with:
+      name: TagShelf.Alfred.ApiWrapper
+      host: https://api.nuget.org/v3/index.json
+      push: true
+      version: ${{github.ref_name}}
