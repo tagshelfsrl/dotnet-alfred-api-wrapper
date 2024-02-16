@@ -38,7 +38,7 @@ jobs:
           echo "VERSION=${{ inputs.version }}" >> $GITHUB_ENV
           echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
       - name: Build
-        run: dotnet build --configuration Release /p:Version=${version}
+        run: dotnet build --configuration Release /p:Version=${VERSION}
       - name: Test
         run: dotnet test --configuration Release /p:Version=${VERSION} --no-build
       - name: Pack
