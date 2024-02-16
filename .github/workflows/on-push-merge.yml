@@ -12,11 +12,11 @@ concurrency:
 
 jobs:
   build:
-    uses: .github/workflows/nuget.yml
+    uses: ./.github/workflows/nuget.yml
 
   release:
     needs: [build]
-    uses: .github/workflows/semver.yml
+    uses: ./.github/workflows/semver.yml
     secrets:
       token: ${{secrets.PAT_TOKEN}}
 
