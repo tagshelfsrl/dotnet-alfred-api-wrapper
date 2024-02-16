@@ -16,6 +16,7 @@ on:
         default: ${{ github.ref }}
       host:
         required: false
+        type: string
     secrets:
       token:
         required: false
