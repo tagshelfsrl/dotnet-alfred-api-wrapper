@@ -11,6 +11,7 @@
     <Description>A comprehensive .NET library designed to facilitate seamless interactions with the Alfred API.</Description>
     <PackageTags>Alfred;API;Wrapper;.NET</PackageTags>
     <RepositoryUrl>https://github.com/tagshelfsrl/dotnet-alfred-api-wrapper</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReleaseNotes>Introducing AccountDomain with webhook setup support. See https://github.com/tagshelfsrl/dotnet-alfred-api-wrapper/releases for more details.</PackageReleaseNotes>
   </PropertyGroup>
