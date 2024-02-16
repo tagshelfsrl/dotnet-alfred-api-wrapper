@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    uses: tagshelfsrl/github-actions/.github/workflows/nuget.yml@v1.13.1
+    uses: .github/workflows/nuget.yml
     secrets: 
       nuget: ${{secrets.NUGET_TOKEN}}
     with:
