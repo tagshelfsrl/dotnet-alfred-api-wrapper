@@ -1,8 +1,24 @@
-# TagShelf.Alfred.ApiWrapper
+# Overview
 
 The `TagShelf.Alfred.ApiWrapper` is a comprehensive .NET library designed to facilitate seamless interactions with the Alfred API. It's tailored to support a wide range of .NET applications, from modern .NET Core and .NET Standard projects to legacy .NET Framework 4.7.2 applications, providing a robust, strongly-typed interface for efficient development.
 
 It provides a robust, strongly-typed interface for efficient development, with specialized domains for handling Tags, Jobs, Files, Deferred Sessions, and Data Points.
+
+## Alfred
+
+Alfred is a powerful document processing platform that enables you to extract, index, and search through large document collections with ease. It offers a wide range of features, including:
+
+- **Indexing**: Powerful indexing engine that can index and search through millions of documents in seconds.
+
+- **Extraction**: Can extract specific data from PDFs, images, and other documents with ease using its powerful extraction engine.
+
+- **Tagging**: Tag documents based on their content, making it easy to organize and search through large document collections.
+
+- **Job Management**: Provides a robust job management system that allows you to schedule and monitor document processing jobs.
+
+- **Integration**: Alfred can be easily integrated into your existing applications using its powerful API and SDKs.
+
+- **Scalability**: Alfred is designed to scale with your needs, whether you're processing thousands of documents a day or millions.
 
 ## Features
 
@@ -11,14 +27,12 @@ It provides a robust, strongly-typed interface for efficient development, with s
 - **Cross-Platform Compatibility**: Designed to be fully compatible across .NET Core, .NET Standard, and .NET Framework 4.7.2, ensuring broad usability in diverse development environments.
 - **Minimal Dependencies**: Crafted to minimize external dependencies, facilitating an easier integration and deployment process with reduced conflict risk.
 
-## Getting Started
-
-### Prerequisites
+## Prerequisites
 
 - .NET Core 2.1+ or .NET Framework 4.7.2+ installed on your development machine.
 - An active Alfred API key for authentication.
 
-### Installation
+## Installation
 
 To integrate the Alfred API wrapper into your .NET project, install the package via NuGet:
 
@@ -26,33 +40,82 @@ To integrate the Alfred API wrapper into your .NET project, install the package 
 dotnet add package TagShelf.Alfred.ApiWrapper
 ```
 
-### Usage
+## Usage
 
-1. **Initialize the Client**
+### Initialize the Client
 
-   Begin by creating an instance of the Alfred client using your preferred authentication method:
+   Begin by creating an instance of the Alfred client using your preferred authentication method along with the desired environment type (Production or Staging). The following examples demonstrate how to initialize the client with different authentication methods:
 
    ```csharp
    var alfred = await AlfredFactory.CreateWithApiKeyFromEnvironmentAsync(EnvironmentType.Staging);
    ```
 
-   For OAuth authentication, specify the method and credentials explicitly:
+   For OAuth authentication, specify the method and credentials explicitly and provide the environment type (Production or Staging):
 
    ```csharp
    var alfred = await AlfredFactory.CreateWithOAuthAsync("username", "password", EnvironmentType.Production);
    ```
 
-2. **Executing Operations**
+   For HMAC authentication, provide the secret key, public key, and environment type (Production or Staging):
 
-   With the client initialized, you're ready to perform API operations. Access the File and Job domains as follows:
+   ```csharp
+   var alfred = await AlfredFactory.CreateWithHmacAsync("secret_key", "public_key", EnvironmentType.Staging);
+   ```
+
+   For API key authentication, use the following method with the API key and environment type (Production or Staging):
+
+   ```csharp
+   var alfred = await AlfredFactory.CreateWithApiKeyAsync("api_key", EnvironmentType.Staging);
+   ```
+
+### File
+
+With the client initialized, you're ready to perform API operations. Access the File and Job domains as follows:
+
+#### Upload File
+
+   | Parameter | Type | Description |
+| --- | --- | --- |
+| Url | string | URL of the file to upload (use url, when you have an URl to single remote file.)|
+|Urls | string[] | URLs of the files to upload. (Use urls, when you have URl's for multiple remote files. The current limit for this parameter is **100 elements**.) |
+| Source | string | Configured object storage source name. Ideal for referring to files hosted in existing cloud containers. When used, **file_name** and **container** are required. |
+|Container | string | Virtual container where the referenced remote file is located. When used, **source** and **file_name** are required.|
+| Filename | string | Unique name of the file within an object storage source. When used, **source** and **container** are required.|
+| Filenames | string[] | Array of unique names of the files within an object storage source. When used, **source** and **container** are required.|
+| Merge | boolean | Boolean value [true/false] - When set to true, will merge all of the remote files into a single PDF file. All of the remote files MUST be images. </br></br>By default this field is set to **false**. |
+| Metadata | string | JSON object or JSON array of objects containing metadata fields for a given remote file. </br></br>When merge field is set to **false**:</br></br>When using the urls field this should be a JSON object array that matches the urls field array length.</br></br>When using the url field the metadata field should be a JSON object.</br></br>When the merge field is set to true: The metadata field should be a JSON object.|
+| PropagateMetadata | boolean | This parameter enables the specification of a single metadata object to be applied across multiple files from remote URLs or remote sources. When used, `propagate_metadata` ensures that the defined metadata is consistently attached to all the specified files during their upload and processing. This feature is particularly useful for maintaining uniform metadata across a batch of files, streamlining data organization and retrieval. |
+| ParentFilePrefix | string | The `parent_file_prefix` parameter is used to specify a virtual folder destination for the uploaded files, diverging from the default 'Inbox' folder. By setting this parameter, users can organize files into specific virtual directories, enhancing file management and accessibility within Alfred's system. |
+
+**Example:**
 
    ```csharp
    // Upload remote file
    var uploadResult = await alfred.File.UploadAsync(new FileUploadRequest
    {
-       Urls = new List<string> { "http://example.com/file.pdf" },
+       Urls = new List<string> { "https://pdfobject.com/pdf/sample.pdf" },
        Metadata = "{'DocumentType':'Invoice'}",       
    });   
+   ```
+
+#### Upload File from Stream
+
+   | Parameter | Type | Description |
+| --- | --- | --- |
+| FileStream | Stream | Stream of the file to upload. |
+| Filename | string | Unique name of the file within an object storage source. |
+| SessionId | Guid | Session ID to associate with the file. |
+| Metadata | string | JSON object or JSON array of objects containing metadata fields for a given remote file. |
+
+**Example:**
+
+   ```csharp
+   // Upload file from stream
+   Stream stream = new StreamReader("file_path\\sample.pdf").BaseStream;
+Guid sessionId= (await alfred.DeferredSession.CreateAsync()).SessionId;
+
+var response = await alfred.File.UploadFileAsync(new UploadFileRequest { FileStream = stream, FileName = "sample.pdf", SessionId = sessionId, Metadata = { } });
+Console.WriteLine(response);
    ```
 
 ## Contributing
