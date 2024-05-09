@@ -4,22 +4,6 @@ The `TagShelf.Alfred.ApiWrapper` is a comprehensive .NET library designed to fac
 
 It provides a robust, strongly-typed interface for efficient development, with specialized domains for handling Tags, Jobs, Files, Deferred Sessions, and Data Points.
 
-## Alfred
-
-Alfred is a powerful document processing platform that enables you to extract, index, and search through large document collections with ease. It offers a wide range of features, including:
-
-- **Indexing**: Powerful indexing engine that can index and search through millions of documents in seconds.
-
-- **Extraction**: Can extract specific data from PDFs, images, and other documents with ease using its powerful extraction engine.
-
-- **Tagging**: Tag documents based on their content, making it easy to organize and search through large document collections.
-
-- **Job Management**: Provides a robust job management system that allows you to schedule and monitor document processing jobs.
-
-- **Integration**: Alfred can be easily integrated into your existing applications using its powerful API and SDKs.
-
-- **Scalability**: Alfred is designed to scale with your needs, whether you're processing thousands of documents a day or millions.
-
 ## Features
 
 - **Comprehensive Authentication Support**: Seamlessly handles OAuth, HMAC, and API key authentication methods, simplifying the process of connecting to the Alfred API.
@@ -30,7 +14,7 @@ Alfred is a powerful document processing platform that enables you to extract, i
 ## Prerequisites
 
 - .NET Core 2.1+ or .NET Framework 4.7.2+ installed on your development machine.
-- An active Alfred API key for authentication.
+- An active Alfred API key, HMAC credentials, or OAuth credentials for authenticating API requests.
 
 ## Installation
 
@@ -40,15 +24,29 @@ To integrate the Alfred API wrapper into your .NET project, install the package 
 dotnet add package TagShelf.Alfred.ApiWrapper
 ```
 
+Alternatively, you can install the package using the NuGet Package Manager in Visual Studio. Search for `TagShelf.Alfred.ApiWrapper` and click the Install button.
+
+For .NET Core CLI, use the following command:
+
+```bash
+Install-Package TagShelf.Alfred.ApiWrapper
+```
+
 ## Usage
 
 ### Initialize the Client
 
    Begin by creating an instance of the Alfred client using your preferred authentication method along with the desired environment type (Production or Staging). The following examples demonstrate how to initialize the client with different authentication methods:
 
-   ```csharp
-   var alfred = await AlfredFactory.CreateWithApiKeyFromEnvironmentAsync(EnvironmentType.Staging);
-   ```
+#### Environments description
+
+- **Production**: The production environment are used for live applications and real-world scenarios. It is recommended to use this environment for production-ready applications. The frontend URL for the production environment is [https://app.tagshelf.com](https://app.tagshelf.com)</br></br>
+
+- **Staging**: The staging environment is used for testing and development purposes. It is recommended to use this environment for testing and development scenarios. The frontend URL for the staging environment is [https://staging.tagshelf.com](https://staging.tagshelf.com)</br></br>
+
+#### Authentication Methods
+
+The following examples demonstrate how to initialize the Alfred client with different authentication methods:
 
    For OAuth authentication, specify the method and credentials explicitly and provide the environment type (Production or Staging):
 
@@ -70,9 +68,19 @@ dotnet add package TagShelf.Alfred.ApiWrapper
 
 ### File
 
-With the client initialized, you're ready to perform API operations. Access the File and Job domains as follows:
+With the client initialized, you're ready to perform API operations
 
-#### Upload File
+These steps demonstrate how to upload a file to Alfred using the `File` domain:
+
+1. Initialize the Alfred client.
+2. Choose the method to upload the file (from URL or stream).
+3. Create a request object with the necessary parameters.
+4. Call the appropriate method to upload the file.
+5. Handle the response accordingly.(The response will contain the file ID or the job ID, depending on the method used.)
+
+#### Upload File (From URL or URLs)
+
+This method allows you to upload a file from a URL or multiple URLs to Alfred. You can also specify metadata for the file during the upload process you have to take into account that this method will automatically trigger the job processing.
 
    | Parameter | Type | Description |
 | --- | --- | --- |
@@ -100,6 +108,8 @@ With the client initialized, you're ready to perform API operations. Access the 
 
 #### Upload File from Stream
 
+This method allows you to upload a file from a stream to Alfred and associate it with a session ID this method will not trigger the job processing this method is ideal for uploading files that are part of a larger job.
+
    | Parameter | Type | Description |
 | --- | --- | --- |
 | FileStream | Stream | Stream of the file to upload. |
@@ -117,6 +127,22 @@ Guid sessionId= (await alfred.DeferredSession.CreateAsync()).SessionId;
 var response = await alfred.File.UploadFileAsync(new UploadFileRequest { FileStream = stream, FileName = "sample.pdf", SessionId = sessionId, Metadata = { } });
 Console.WriteLine(response);
    ```
+
+## Alfred
+
+Alfred is a powerful document processing platform that enables you to extract, index, and search through large document collections with ease. It offers a wide range of features, including:
+
+- **Indexing**: Powerful indexing engine that can index and search through millions of documents in seconds.
+
+- **Extraction**: Can extract specific data from PDFs, images, and other documents with ease using its powerful extraction engine.
+
+- **Tagging**: Tag documents based on their content, making it easy to organize and search through large document collections.
+
+- **Job Management**: Provides a robust job management system that allows you to schedule and monitor document processing jobs.
+
+- **Integration**: Alfred can be easily integrated into your existing applications using its powerful API and SDKs.
+
+- **Scalability**: Alfred is designed to scale with your needs, whether you're processing thousands of documents a day or millions.
 
 ## Contributing
 
