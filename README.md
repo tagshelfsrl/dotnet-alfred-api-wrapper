@@ -204,17 +204,17 @@ This method enables you to upload a file from a stream to Alfred and associate i
 
    | Parameter | Type | Description |
    | --- | --- | --- |
-   | sessionId | string | Session ID |
-   | metadata | any | Metadata of the job |
-   | propagateMetadata | boolean | If `true` ensures that the provided metadata at the Job level is attached to all the specified Files. |
-   | merge | boolean | If `true`, when all provided Files are either images or PDFs, the system combines them into a single file for the purpose of processing. |
+   | SessionId | string | Session ID |
+   | Metadata | any | Metadata of the job |
+   | PropagateMetadata | boolean | If `true` ensures that the provided metadata at the Job level is attached to all the specified Files. |
+   | Merge | boolean | If `true`, when all provided Files are either images or PDFs, the system combines them into a single file for the purpose of processing. |
    | decompose | boolean | If `true`, when the provided File is a PDF, the system will decompose it into individual pages for processing. |
-   | channel | string | Channel |
-   | parentFilePrefix | string | The `parent_file_prefix` parameter is used to specify a virtual folder destination for the uploaded files, diverging from the default 'Inbox' folder. By setting this parameter, users can organize files into specific virtual directories, enhancing file management and accessibility within Alfred's system. |
-   | pageRotation | number | Page rotation |
-   | container | string | Virtual container where the referenced remote file is located.|
-   | filename | string | Unique name of the file within an object storage source.|
-   | filenames | string[] | Array of unique names of the files within an object storage source.|
+   | Channel | string | Channel |
+   | ParentFilePrefix | string | The `parent_file_prefix` parameter is used to specify a virtual folder destination for the uploaded files, diverging from the default 'Inbox' folder. By setting this parameter, users can organize files into specific virtual directories, enhancing file management and accessibility within Alfred's system. |
+   | PageRotation | number | Page rotation |
+   | Container | string | Virtual container where the referenced remote file is located.|
+   | Filename | string | Unique name of the file within an object storage source.|
+   | Filenames | string[] | Array of unique names of the files within an object storage source.|
 
    **Example:**</br></br>
 
