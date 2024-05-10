@@ -68,7 +68,7 @@ The following examples demonstrate how to initialize the Alfred client with diff
 
 ### File
 
-With the client initialized, you're ready to perform API operations
+With the client initialized, you're ready to perform API operations.
 
 These steps demonstrate how to upload a file to Alfred using the `File` domain:
 
@@ -80,7 +80,7 @@ These steps demonstrate how to upload a file to Alfred using the `File` domain:
 
 #### Upload File (From URL or URLs)
 
-This method allows you to upload a file from a URL or multiple URLs to Alfred. You can also specify metadata for the file during the upload process you have to take into account that this method will automatically trigger the job processing.
+This method enables you to upload a file from one or multiple URLs to Alfred. During the upload process, you can also specify metadata for the file. Please note that using this method will automatically trigger job processing.
 
    | Parameter | Type | Description |
 | --- | --- | --- |
@@ -108,7 +108,7 @@ This method allows you to upload a file from a URL or multiple URLs to Alfred. Y
 
 #### Upload File from Stream
 
-This method allows you to upload a file from a stream to Alfred and associate it with a session ID this method will not trigger the job processing this method is ideal for uploading files that are part of a larger job.
+This method enables you to upload a file from a stream to Alfred and associate it with a specific session ID. Unlike other methods, this one does not trigger job processing, making it ideal for uploading files that are part of a larger job.
 
    | Parameter | Type | Description |
 | --- | --- | --- |
