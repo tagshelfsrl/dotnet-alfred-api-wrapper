@@ -4,6 +4,23 @@ The `TagShelf.Alfred.ApiWrapper` is a comprehensive .NET library designed to fac
 
 It provides a robust, strongly-typed interface for efficient development, with specialized domains for handling Tags, Jobs, Files, Deferred Sessions, and Data Points.
 
+## Alfred
+
+Alfred is a powerful document processing platform that enables you to extract, index, and search through large document collections with ease. It offers a wide range of features, including:
+
+- **Job Management**: Provides a robust job management system that allows you to schedule and monitor document processing jobs.
+
+- **Tagging**: Tag documents based on their content, making it easy to organize and search through large document collections.
+
+- **Extraction**: Can extract specific data from PDFs, images, and other documents with ease using its powerful extraction engine.
+
+- **Indexing**: Powerful indexing engine that can index and search through millions of documents in seconds.
+
+- **Integration**: Alfred can be easily integrated into your existing applications using its powerful API and SDKs.
+
+- **Scalability**: Alfred is designed to scale with your needs, whether you're processing thousands of documents a day or millions.
+
+
 ## Features
 
 - **Comprehensive Authentication Support**: Seamlessly handles OAuth, HMAC, and API key authentication methods, simplifying the process of connecting to the Alfred API.
@@ -95,15 +112,46 @@ This method enables you to upload a file from one or multiple URLs to Alfred. Du
 | PropagateMetadata | boolean | This parameter enables the specification of a single metadata object to be applied across multiple files from remote URLs or remote sources. When used, `propagate_metadata` ensures that the defined metadata is consistently attached to all the specified files during their upload and processing. This feature is particularly useful for maintaining uniform metadata across a batch of files, streamlining data organization and retrieval. |
 | ParentFilePrefix | string | The `parent_file_prefix` parameter is used to specify a virtual folder destination for the uploaded files, diverging from the default 'Inbox' folder. By setting this parameter, users can organize files into specific virtual directories, enhancing file management and accessibility within Alfred's system. |
 
-**Example:**
+##### Step by Step Guide
+
+1. The first step after initializing the Alfred client is to create a request object with the necessary parameters. The following parameters are available for the `FileUploadRequest` object:</br></br>
+
+   ```csharp
+   // Create a request object with the necessary parameters
+   UploadRequest uploadRequest = new UploadRequest
+   {
+      Urls = new List<string> { "https://pdfobject.com/pdf/sample.pdf", "https://pdfobject.com/pdf/sample.pdf" },
+      FileNames = new List<string> { "sample.pdf", "sample.pdf" },
+
+   };
+   ```
+
+2. Next, call the appropriate method to upload the file. In this case, we'll use the `UploadAsync` method to upload the file from the URL:</br></br>
 
    ```csharp
    // Upload remote file
-   var uploadResult = await alfred.File.UploadAsync(new FileUploadRequest
-   {
-       Urls = new List<string> { "https://pdfobject.com/pdf/sample.pdf" },
-       Metadata = "{'DocumentType':'Invoice'}",       
-   });   
+   var uploadResult = await alfred.File.UploadAsync(uploadRequest);
+   ```
+
+3. Finally, handle the response accordingly. The response will contain the job ID since the `UploadAsync` method triggers job processing:</br></br>
+
+   ```csharp
+   Console.WriteLine(uploadResult.JobId);
+   ```
+
+**Complete example:**
+
+   ```csharp
+   // Upload remote file
+   UploadRequest uploadRequest = new UploadRequest
+{
+    Urls = new List<string> { "https://pdfobject.com/pdf/sample.pdf", "https://pdfobject.com/pdf/sample.pdf" },
+    FileNames = new List<string> { "sample.pdf", "sample.pdf" },
+
+};
+var uploadResult = await alfred.File.UploadAsync(uploadRequest);
+
+Console.WriteLine(uploadResult.JobId);
    ```
 
 #### Upload File from Stream
@@ -117,32 +165,74 @@ This method enables you to upload a file from a stream to Alfred and associate i
 | SessionId | Guid | Session ID to associate with the file. |
 | Metadata | string | JSON object or JSON array of objects containing metadata fields for a given remote file. |
 
-**Example:**
+##### Step by Step Guide
+
+1. The first step after initializing the Alfred client is to create a `session ID` using the `DeferredSession` domain. The following parameters are available for the `CreateAsync` method. This is used to associate the file with a specific session ID that can be used for further processing of all files uploaded within the same session that a single job contains:</br></br>
+
+   ```csharp
+   // Create a session ID
+   Guid sessionId = (await alfred.DeferredSession.CreateAsync()).SessionId;
+   ```
+
+2. Next, create a request object with the necessary parameters. The following parameters are available for the `UploadFileRequest` object:</br></br>
+
+   ```csharp
+   // Create a request object with the necessary parameters
+   UploadFileRequest uploadFileRequest = new UploadFileRequest
+   {
+      FileStream = new StreamReader("file_path\\sample.pdf").BaseStream,
+      FileName = "sample.pdf",
+      SessionId = sessionId,
+      Metadata = { }
+   };
+   ```
+
+3. Next, call the appropriate method to upload the file. In this case, we'll use the `UploadFileAsync` method to upload the file from the stream:</br></br>
+
+   ```csharp
+   // Upload file from stream
+   var response = await alfred.File.UploadFileAsync(uploadFileRequest);
+   ```
+
+4. Handle the response accordingly. The response will contain the file ID since the `UploadFileAsync` method does not trigger job processing:</br></br>
+
+   ```csharp
+   Console.WriteLine(response.FileId);
+   ```
+
+5. Finally, trigger the job processing using the `Job` domain. The following parameters are available for the `CreateAsync` method witch it can contain the following parameters:</br></br>
+
+   | Parameter | Type | Description |
+   | --- | --- | --- |
+   | sessionId | string | Session ID |
+   | metadata | any | Metadata of the job |
+   | propagateMetadata | boolean | If `true` ensures that the provided metadata at the Job level is attached to all the specified Files. |
+   | merge | boolean | If `true`, when all provided Files are either images or PDFs, the system combines them into a single file for the purpose of processing. |
+   | decompose | boolean | If `true`, when the provided File is a PDF, the system will decompose it into individual pages for processing. |
+   | channel | string | Channel |
+   | parentFilePrefix | string | The `parent_file_prefix` parameter is used to specify a virtual folder destination for the uploaded files, diverging from the default 'Inbox' folder. By setting this parameter, users can organize files into specific virtual directories, enhancing file management and accessibility within Alfred's system. |
+   | pageRotation | number | Page rotation |
+   | container | string | Virtual container where the referenced remote file is located.|
+   | filename | string | Unique name of the file within an object storage source.|
+   | filenames | string[] | Array of unique names of the files within an object storage source.|
+
+   **Example:**</br></br>
+
+   ```csharp
+   // Trigger job processing
+   Guid jobId = alfred.Job.CreateAsync(new CreateJobRequest { SessionId = sessionId}).Result.JobId;
+   ```
+
+**Complete example:**
 
    ```csharp
    // Upload file from stream
    Stream stream = new StreamReader("file_path\\sample.pdf").BaseStream;
 Guid sessionId= (await alfred.DeferredSession.CreateAsync()).SessionId;
+Guid jobId = alfred.Job.CreateAsync(new CreateJobRequest { SessionId = sessionId}).Result.JobId;
 
-var response = await alfred.File.UploadFileAsync(new UploadFileRequest { FileStream = stream, FileName = "sample.pdf", SessionId = sessionId, Metadata = { } });
-Console.WriteLine(response);
+Console.WriteLine(jobId);
    ```
-
-## Alfred
-
-Alfred is a powerful document processing platform that enables you to extract, index, and search through large document collections with ease. It offers a wide range of features, including:
-
-- **Indexing**: Powerful indexing engine that can index and search through millions of documents in seconds.
-
-- **Extraction**: Can extract specific data from PDFs, images, and other documents with ease using its powerful extraction engine.
-
-- **Tagging**: Tag documents based on their content, making it easy to organize and search through large document collections.
-
-- **Job Management**: Provides a robust job management system that allows you to schedule and monitor document processing jobs.
-
-- **Integration**: Alfred can be easily integrated into your existing applications using its powerful API and SDKs.
-
-- **Scalability**: Alfred is designed to scale with your needs, whether you're processing thousands of documents a day or millions.
 
 ## Contributing
 
