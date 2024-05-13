@@ -20,7 +20,6 @@ Alfred is a powerful document processing platform that enables you to extract, i
 
 - **Scalability**: Alfred is designed to scale with your needs, whether you're processing thousands of documents a day or millions.
 
-
 ## Features
 
 - **Comprehensive Authentication Support**: Seamlessly handles OAuth, HMAC, and API key authentication methods, simplifying the process of connecting to the Alfred API.
@@ -133,25 +132,23 @@ This method enables you to upload a file from one or multiple URLs to Alfred. Du
    var uploadResult = await alfred.File.UploadAsync(uploadRequest);
    ```
 
-3. Finally, handle the response accordingly. The response will contain the job ID since the `UploadAsync` method triggers job processing:</br></br>
+3. Handle the response accordingly. The response will contain the job ID since the `UploadAsync` method triggers job processing:</br></br>
 
    ```csharp
    Console.WriteLine(uploadResult.JobId);
    ```
 
-**Complete example:**
+4. Finally you can get the job status using the `Job` domain. The following parameters are available for the `GetAsync` method:</br></br>
+
+   | Parameter | Type | Description |
+   | --- | --- | --- |
+   | JobId | Guid | Job ID |
+
+   **Example:**</br></br>
 
    ```csharp
-   // Upload remote file
-   UploadRequest uploadRequest = new UploadRequest
-{
-    Urls = new List<string> { "https://pdfobject.com/pdf/sample.pdf", "https://pdfobject.com/pdf/sample.pdf" },
-    FileNames = new List<string> { "sample.pdf", "sample.pdf" },
-
-};
-var uploadResult = await alfred.File.UploadAsync(uploadRequest);
-
-Console.WriteLine(uploadResult.JobId);
+   // Get job status
+   var jobStatus = await alfred.Job.GetAsync(uploadResult.JobId);
    ```
 
 #### Upload File from Stream
@@ -200,7 +197,7 @@ This method enables you to upload a file from a stream to Alfred and associate i
    Console.WriteLine(response.FileId);
    ```
 
-5. Finally, trigger the job processing using the `Job` domain. The following parameters are available for the `CreateAsync` method witch it can contain the following parameters:</br></br>
+5. Trigger the job processing using the `Job` domain. The following parameters are available for the `CreateAsync` method witch it can contain the following parameters:</br></br>
 
    | Parameter | Type | Description |
    | --- | --- | --- |
@@ -223,15 +220,18 @@ This method enables you to upload a file from a stream to Alfred and associate i
    Guid jobId = alfred.Job.CreateAsync(new CreateJobRequest { SessionId = sessionId}).Result.JobId;
    ```
 
-**Complete example:**
+6. Finally you can get the job status using the `Job` domain. The following parameters are available for the `GetAsync` method:</br></br>
+
+   | Parameter | Type | Description |
+   | --- | --- | --- |
+   | JobId | Guid | Job ID |
+
+   **Example:**</br></br>
 
    ```csharp
-   // Upload file from stream
-   Stream stream = new StreamReader("file_path\\sample.pdf").BaseStream;
-Guid sessionId= (await alfred.DeferredSession.CreateAsync()).SessionId;
-Guid jobId = alfred.Job.CreateAsync(new CreateJobRequest { SessionId = sessionId}).Result.JobId;
-
-Console.WriteLine(jobId);
+   // Get job status
+   var jobStatus = await alfred.Job.GetAsync(jobId);
+   Console.WriteLine(jobStatus);
    ```
 
 ## Contributing
