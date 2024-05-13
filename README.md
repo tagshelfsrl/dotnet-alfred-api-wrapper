@@ -18,7 +18,7 @@ Alfred is a powerful document processing platform that enables you to extract, i
 
 - **Integration**: Alfred can be easily integrated into your existing applications using its powerful API and SDKs.
 
-- **Scalability**: Alfred is designed to scale with your needs, whether you're processing thousands of documents a day or millions.
+- **Scalability**: Alfred is designed to expand its capacity seamlessly according to client needs, efficiently processing anywhere from thousands to millions of documents each day.
 
 ## Features
 
