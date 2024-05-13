@@ -62,6 +62,8 @@ Install-Package TagShelf.Alfred.ApiWrapper
 
 #### Authentication Methods
 
+To obtain the necessary credentials for the following authentication methods, please refer to the [Alfred API documentation](https://docs.tagshelf.dev/authentication) or contact the Alfred support team.
+
 The following examples demonstrate how to initialize the Alfred client with different authentication methods:
 
    For OAuth authentication, specify the method and credentials explicitly and provide the environment type (Production or Staging):
@@ -144,20 +146,16 @@ This method enables you to upload a file from one or multiple URLs to Alfred. Du
    | --- | --- | --- |
    | JobId | Guid | Job ID |
 
-   **Example:**</br></br>
+   **Example:**
 
    ```csharp
    // Get job status
    var jobStatus = await alfred.Job.GetAsync(uploadResult.JobId);
    ```
 
-5. Retrieve the data points using the `DataPoint` domain. The following parameters are available for the `GetValuesAsync` method:</br></br>
+5. Retrieve the data points using the `DataPoint` domain. Here we're going to wait for the job to complete and then get the data points for each file:</br></br>
 
-   | Parameter | Type | Description |
-   | --- | --- | --- |
-   | FileId | Guid | File ID |
-
-   **Example:**</br></br>
+   **Example:**
 
    ```csharp
    var jobstatus = alfred.Job.GetAsync(uploadResult.JobId).Result.Stage;
@@ -236,7 +234,7 @@ This method enables you to upload a file from a stream to Alfred and associate i
    | Filename | string | Unique name of the file within an object storage source.|
    | Filenames | string[] | Array of unique names of the files within an object storage source.|
 
-   **Example:**</br></br>
+   **Example:**
 
    ```csharp
    // Trigger job processing
@@ -244,7 +242,7 @@ This method enables you to upload a file from a stream to Alfred and associate i
    ```
 
 5. Get the job status using the `Job` domain. This way you can check the stage of the job processing. For more information about the `job stages` please visit the [Alfred documentation](https://docs.tagshelf.dev/enpoints/job/job-stages).</br></br>
-   **Example:**</br></br>
+   **Example:**
 
    ```csharp
    // Get job status
@@ -252,8 +250,9 @@ This method enables you to upload a file from a stream to Alfred and associate i
    Console.WriteLine(jobStatus);
    ```
 
-6. Retrieve the data points using the `DataPoint` domain. The following parameters are available for the `GetAsync` method:</br></br>
-   **Example:**</br></br>
+6. Retrieve the data points using the `DataPoint` domain. Here we're going to wait for the job to complete and then get the data points for each file:</br></br>
+
+   **Example:**
 
    ```csharp
    var jobstatus = alfred.Job.GetAsync(jobId).Result.Stage;
