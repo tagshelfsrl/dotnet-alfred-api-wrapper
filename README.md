@@ -125,7 +125,7 @@ This method enables you to upload a file from one or multiple URLs to Alfred. Du
    };
    ```
 
-2. Next, call the appropriate method to upload the file. In this case, we'll use the `UploadAsync` method to upload the file from the URL:</br></br>
+2. Next, call the appropriate method to upload the file. In this case, we'll use the `UploadAsync` method to upload the file from the URL in this step we are uploading and triggering the magic:</br></br>
 
    ```csharp
    // Upload remote file
@@ -138,7 +138,7 @@ This method enables you to upload a file from one or multiple URLs to Alfred. Du
    Console.WriteLine(uploadResult.JobId);
    ```
 
-4. Finally you can get the job status using the `Job` domain. The following parameters are available for the `GetAsync` method:</br></br>
+4. Get the job status using the `Job` domain. The following parameters are available for the `GetAsync` method:</br></br>
 
    | Parameter | Type | Description |
    | --- | --- | --- |
@@ -149,6 +149,35 @@ This method enables you to upload a file from one or multiple URLs to Alfred. Du
    ```csharp
    // Get job status
    var jobStatus = await alfred.Job.GetAsync(uploadResult.JobId);
+   ```
+
+5. Retrieve the data points using the `DataPoint` domain. The following parameters are available for the `GetValuesAsync` method:</br></br>
+
+   | Parameter | Type | Description |
+   | --- | --- | --- |
+   | FileId | Guid | File ID |
+
+   **Example:**</br></br>
+
+   ```csharp
+   var jobstatus = alfred.Job.GetAsync(uploadResult.JobId).Result.Stage;
+
+   // check if the job is completed if not, wait for it to complete
+   while (jobstatus != "completed")
+   {
+      // sleep for 1 second to avoid hitting the API rate limit
+      System.Threading.Thread.Sleep(1000);
+      jobstatus = alfred.Job.GetAsync(uploadResult.JobId).Result.Stage;
+   }
+   // get the files to retrieve the data points
+   var files = alfred.Job.GetAsync(uploadResult.JobId).Result.Files;
+
+   // get the data points for each file
+   foreach (var file in files)
+   {
+      var dataResult = alfred.DataPoint.GetValuesAsync(file.FileId).Result;
+      Console.WriteLine(dataResult);
+   }
    ```
 
 #### Upload File from Stream
@@ -184,20 +213,14 @@ This method enables you to upload a file from a stream to Alfred and associate i
    };
    ```
 
-3. Next, call the appropriate method to upload the file. In this case, we'll use the `UploadFileAsync` method to upload the file from the stream:</br></br>
+3. Next, call the appropriate method to upload the file. In this case, we'll use the `UploadFileAsync` method to upload the file from the stream unlike the previous method this one does not trigger job processing:</br></br>
 
    ```csharp
    // Upload file from stream
    var response = await alfred.File.UploadFileAsync(uploadFileRequest);
    ```
 
-4. Handle the response accordingly. The response will contain the file ID since the `UploadFileAsync` method does not trigger job processing:</br></br>
-
-   ```csharp
-   Console.WriteLine(response.FileId);
-   ```
-
-5. Trigger the job processing using the `Job` domain. The following parameters are available for the `CreateAsync` method witch it can contain the following parameters:</br></br>
+4. Trigger the job processing using the `Job` domain. The following parameters are available for the `CreateAsync` method witch it can contain the following parameters:</br></br>
 
    | Parameter | Type | Description |
    | --- | --- | --- |
@@ -220,18 +243,38 @@ This method enables you to upload a file from a stream to Alfred and associate i
    Guid jobId = alfred.Job.CreateAsync(new CreateJobRequest { SessionId = sessionId}).Result.JobId;
    ```
 
-6. Finally you can get the job status using the `Job` domain. The following parameters are available for the `GetAsync` method:</br></br>
-
-   | Parameter | Type | Description |
-   | --- | --- | --- |
-   | JobId | Guid | Job ID |
-
+5. Get the job status using the `Job` domain. This way you can check the stage of the job processing. For more information about the `job stages` please visit the [Alfred documentation](https://docs.tagshelf.dev/enpoints/job/job-stages).</br></br>
    **Example:**</br></br>
 
    ```csharp
    // Get job status
    var jobStatus = await alfred.Job.GetAsync(jobId);
    Console.WriteLine(jobStatus);
+   ```
+
+6. Retrieve the data points using the `DataPoint` domain. The following parameters are available for the `GetAsync` method:</br></br>
+   **Example:**</br></br>
+
+   ```csharp
+   var jobstatus = alfred.Job.GetAsync(jobId).Result.Stage;
+
+   // check if the job is completed if not, wait for it to complete
+   while (jobstatus != "completed")
+   {
+      // sleep for 1 second to avoid hitting the API rate limit
+      System.Threading.Thread.Sleep(1000);
+      jobstatus = alfred.Job.GetAsync(jobId).Result.Stage;
+   }
+   // get the files to retrieve the data points
+   var files = alfred.Job.GetAsync(jobId).Result.Files;
+
+   // get the data points for each file
+   foreach (var file in files)
+   {
+      var dataResult = alfred.DataPoint.GetValuesAsync(file.FileId).Result;
+      Console.WriteLine(dataResult);
+   }
+
    ```
 
 ## Contributing
