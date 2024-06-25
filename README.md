@@ -2,7 +2,7 @@
 
 The `TagShelf.Alfred.ApiWrapper` is a comprehensive .NET library designed to facilitate seamless interactions with the Alfred API. It's tailored to support a wide range of .NET applications, from modern .NET Core and .NET Standard projects to legacy .NET Framework 4.7.2 applications, providing a robust, strongly-typed interface for efficient development.
 
-It provides a robust, strongly-typed interface for efficient development, with specialized domains for handling Files, Deferred Sessions, Tags, Jobs and Data Points.
+It provides a robust, strongly-typed interface for efficient development, with specialized domains for handling Deferred Sessions, Files, Jobs and Data Points.
 
 ## Alfred
 
@@ -20,8 +20,6 @@ Alfred is a powerful document processing platform that enables you to extract, i
 
 - **Scalability**: Alfred is designed to expand its capacity seamlessly according to client needs, efficiently processing anywhere from thousands to millions of documents each day.
 
-### Features
-
 - **Comprehensive Authentication Support**: Seamlessly handles OAuth, HMAC, and API key authentication methods, simplifying the process of connecting to the Alfred API.
 
 - **Domain-Specific Operations**: Offers specialized support for File and Job operations, enabling developers to intuitively manage and interact with API resources.
@@ -37,7 +35,7 @@ Alfred is a powerful document processing platform that enables you to extract, i
 
 # Installation
 
-To integrate the Alfred API wrapper into your .NET project, install the package via NuGet:
+To integrate the Alfred API wrapper into your .NET project, install the package via NuGet in the `src` folder of your project:
 
 ```bash
 dotnet add package TagShelf.Alfred.ApiWrapper
@@ -51,41 +49,158 @@ For .NET Core CLI, use the following command:
 Install-Package TagShelf.Alfred.ApiWrapper
 ```
 
-# Usage
+# Environment
 
-## Initialize the Client
+You will always use the production environment for all your integrations using this library. The production environment is used for live applications and real-world scenarios. It is recommended to use this environment for production-ready applications. The frontend URL for the production environment is [https://app.tagshelf.com](https://app.tagshelf.com)</br></br>
 
-Begin by creating an instance of the Alfred client using your preferred authentication method along with the desired environment type (Production or Staging). The following examples demonstrate how to initialize the client with different authentication methods:
+# Authentication
 
-### Environments description
+Alfred supports three authentication methods: OAuth, HMAC, and App API Key. Each method is suited for different scenarios. To obtain the necessary credentials for the following authentication methods, please refer to the [Alfred API documentation](https://docs.tagshelf.dev/authentication) or contact the Alfred support team.
 
-- **Production**: The production environment are used for live applications and real-world scenarios. It is recommended to use this environment for production-ready applications. The frontend URL for the production environment is [https://app.tagshelf.com](https://app.tagshelf.com)</br></br>
+|OAuth||
+|--|--|
+| **When to Use**   | Ideal for web portals needing integration with document parsers or API-driven services, especially when users access through browsers. Suitable for short-lived browser sessions and scenarios requiring scoped, secure access.|
+| **Benefits**      | Enhanced security via token use, flexible access control, and a user-friendly experience with periodic re-authentication.|
+| **Best Practices**| Secure token storage and graceful handling of token expiration.|
 
-- **Staging**: The staging environment is used for testing and development purposes. It is recommended to use this environment for testing and development scenarios. The frontend URL for the staging environment is [https://staging.tagshelf.com](https://staging.tagshelf.com)</br></br>
-
-### Authentication Methods
-
-To obtain the necessary credentials for the following authentication methods, please refer to the [Alfred API documentation](https://docs.tagshelf.dev/authentication) or contact the Alfred support team.
-
-The following examples demonstrate how to initialize the Alfred client with different authentication methods:
-
-For OAuth authentication, specify the method and credentials explicitly and provide the environment type (Production or Staging):
+To initialize the client for OAuth authentication, specify the credentials explicitly:
 
 ```csharp
 var alfred = await AlfredFactory.CreateWithOAuthAsync("username", "password", EnvironmentType.Production);
 ```
 
-For HMAC authentication, provide the secret key, public key, and environment type (Production or Staging):
+|HMAC||
+|--|--|
+| **When to Use**    | Best for applications needing individual account access without token management, ensuring secure transactions.|
+| **Benefits**       | Secure request authentication with a unique signature per request.|
+| **Best Practices** | Secure key management, include timestamps to prevent replay attacks, and use a dynamic nonce for each request.|
+
+To initialize the client for HMAC authentication, provide the secret key and public key:
 
 ```csharp
-var alfred = await AlfredFactory.CreateWithHmacAsync("secret_key", "public_key", EnvironmentType.Staging);
+var alfred = await AlfredFactory.CreateWithHmacAsync("secret_key", "public_key", EnvironmentType.Production);
 ```
 
-For API key authentication, use the following method with the API key and environment type (Production or Staging):
+|App API Key||
+|--|--|
+| **When to Use**    | Recommended for server-to-server communication, automated processes, and background services where user interaction is not feasible.|
+| **Benefits**       | Non-interactive yet robust authentication, simplicity, and easy access control.|
+| **Best Practices** | Secure storage of API keys, apply the principle of least privilege, and regularly rotate keys to minimize compromise risks.|
+
+To initialize the client for API key authentication, provide the API key:
 
 ```csharp
 var alfred = await AlfredFactory.CreateWithApiKeyAsync("api_key", EnvironmentType.Staging);
 ```
+
+# Getting Started
+
+This library covers 6 different domains: 
+- [Tagshelf](#tagshelf-tagshelf-domain)
+- [Deferred Sessions](#deferred-sessions-deferred-sessions-domain)
+- [Files](#files-files-domain)
+- [Jobs](#jobs-jobs-domain)
+- [Data Points](#data-points-data-points-domain)
+- [Account](#account-account-domain)
+
+## Tagshelf {#tagshelf-domain}
+
+The Tagshelf API namespace serves as a dedicated domain within the API for platform status and identity queries. This namespace is tailored to provide essential functionalities related to the operational status and user context of the platform. It encompasses endpoints that are crucial for system health checks, user identity verification, and basic connectivity tests. 
+
+### Check Platform Operational Status
+
+This endpoint offers a quick way to check the overall operational status of the platform.
+
+```csharp
+// Authentication
+var alfred = await AlfredFactory.CreateWithOAuthAsync("admin@tagshelf.com", "T@gSh3lf", EnvironmentType.Staging);
+
+// Get the Platform Operational Status
+TagshelfStatusResult status = await alfred.Tagshelf.StatusAsync();
+
+// Print the Result
+Console.WriteLine(status);
+```
+**Result**
+```cmd
+ApiVersion: 1.47.6.0, DbStatus: online
+```
+
+### Retrieve User Identity Information
+
+This endpoint provides information about the currently authenticated user.
+
+```csharp
+// Authentication
+var alfred = await AlfredFactory.CreateWithOAuthAsync("admin@tagshelf.com", "T@gSh3lf", EnvironmentType.Staging);
+
+// Get the Platform Operational Status
+WhoAmIResult whoami = await alfred.Tagshelf.WhoAmIAsync();
+
+// Print the Result
+Console.WriteLine(whoami);
+```
+**Result**
+```cmd
+UserName: admin@tagshelf.com, Name: Admin Tagshelf, Roles: Admin, Developer, Status: active, Company: TAGSHELF, App: , AppId: 00000000-0000-0000-0000-000000000000, RequestOriginIpAddress: 152.0.135.113:20845
+```
+
+### Conduct a Basic Connectivity Test
+
+The `ping` endpoint is used to perform a basic connectivity test to the platform.
+
+```csharp
+// Authentication
+var alfred = await AlfredFactory.CreateWithOAuthAsync("admin@tagshelf.com", "T@gSh3lf", EnvironmentType.Staging);
+
+// Get the Platform Operational Status
+PingResult ping = await alfred.Tagshelf.PingAsync();
+
+// Print the Result
+Console.WriteLine(ping);
+```
+**Result**
+```cmd
+Pong: admin@tagshelf.com
+```
+
+## Deferred Sessions {#deferred-sessions-domain}
+
+A Deferred Session in Alfred is a mechanism designed for asynchronous file uploads, integral to the document processing workflow. It serves as a container or grouping for files that are uploaded at different times or from various sources, but are all part of a single processing task or Job.
+
+### Create a new Deferred Session
+
+
+
+
+
+### Retrieve Details of a Specific Deferred Session
+
+
+
+
+
+
+## Files {#files-domain}
+
+In Alfred, a file is an individual document or data unit undergoing specialized operations tailored for document analysis and management. It is processed by the platform for tasks such as classification, optical character recognition (OCR), and data extraction. Each file, as a distinct entity, transitions through various statuses, which mark its progress in the automated workflow. 
+
+
+
+
+
+
+
+
+
+
+## Jobs {#jobs-domain}
+
+## Data Points {#data-points-domain}
+
+## Account {#account-domain}
+
+
 
 ## File Operations
 
@@ -242,10 +357,9 @@ foreach (var file in files)
 
 ```
 
-## Notes
+# Notes
 
-For more information on job stages and data points, refer to the [Alfred Official Documentation](https://docs.tagshelf.dev/).
-Ensure to handle any exceptions or errors that may occur during API calls for robust implementation.
+For more information on job stages, data points and other parameters to customize your calls to Alfreds' different endpoints, refer to the [Alfred Official Documentation](https://docs.tagshelf.dev/). Ensure to handle any exceptions or errors that may occur during API calls for robust implementation.
 
 # Contributing
 
