@@ -1,8 +1,6 @@
 # Overview
 
-The `TagShelf.Alfred.ApiWrapper` is a comprehensive .NET library designed to facilitate seamless interactions with the Alfred API. It's tailored to support a wide range of .NET applications, from modern .NET Core and .NET Standard projects to legacy .NET Framework 4.7.2 applications, providing a robust, strongly-typed interface for efficient development.
-
-It provides a robust, strongly-typed interface for efficient development, with specialized domains for handling Deferred Sessions, Files, Jobs and Data Points.
+The `TagShelf.Alfred.ApiWrapper` is a comprehensive .NET library designed to facilitate seamless interactions with the Alfred API. It's tailored to support a wide range of .NET applications, from modern .NET Core and .NET Standard projects to legacy .NET Framework 4.7.2 applications, providing a robust, strongly-typed interface for efficient development. It includes specialized domains for handling Deferred Sessions, Files, Jobs and Data Points.
 
 ## Alfred
 
@@ -55,7 +53,7 @@ You will always use the production environment for all your integrations using t
 
 # Authentication
 
-Alfred supports three authentication methods: OAuth, HMAC, and App API Key. Each method is suited for different scenarios. To obtain the necessary credentials for the following authentication methods, please refer to the [Alfred API documentation](https://docs.tagshelf.dev/authentication) or contact the Alfred support team.
+Alfred supports three authentication methods: OAuth, HMAC, and App API Key. Each method is suited for different scenarios. To obtain the necessary credentials for the following authentication methods, please refer to the [Alfred API documentation](https://docs.tagshelf.dev/authentication) or contact the Alfred support team at support@tagshelf.com.
 
 |OAuth||
 |--|--|
@@ -63,7 +61,7 @@ Alfred supports three authentication methods: OAuth, HMAC, and App API Key. Each
 | **Benefits**      | Enhanced security via token use, flexible access control, and a user-friendly experience with periodic re-authentication.|
 | **Best Practices**| Secure token storage and graceful handling of token expiration.|
 
-To initialize the client for OAuth authentication, specify the credentials explicitly:
+To initialize the client for OAuth authentication, specify your Tagshelf credentials explicitly:
 
 ```csharp
 var alfred = await AlfredFactory.CreateWithOAuthAsync("username", "password", EnvironmentType.Production);
@@ -90,20 +88,20 @@ var alfred = await AlfredFactory.CreateWithHmacAsync("secret_key", "public_key",
 To initialize the client for API key authentication, provide the API key:
 
 ```csharp
-var alfred = await AlfredFactory.CreateWithApiKeyAsync("api_key", EnvironmentType.Staging);
+var alfred = await AlfredFactory.CreateWithApiKeyAsync("api_key", EnvironmentType.Production);
 ```
 
 # Getting Started
 
 This library covers 6 different domains: 
-- [Tagshelf](#tagshelf-tagshelf-domain)
-- [Deferred Sessions](#deferred-sessions-deferred-sessions-domain)
-- [Files](#files-files-domain)
-- [Jobs](#jobs-jobs-domain)
-- [Data Points](#data-points-data-points-domain)
-- [Account](#account-account-domain)
+- [Tagshelf](#tagshelf)
+- [Deferred Sessions](#deferred-sessions)
+- [Files](#files)
+- [Jobs](#jobs)
+- [Data Points](#data-points)
+- [Account](#account)
 
-## Tagshelf {#tagshelf-domain}
+## Tagshelf
 
 The Tagshelf API namespace serves as a dedicated domain within the API for platform status and identity queries. This namespace is tailored to provide essential functionalities related to the operational status and user context of the platform. It encompasses endpoints that are crucial for system health checks, user identity verification, and basic connectivity tests. 
 
@@ -112,13 +110,18 @@ The Tagshelf API namespace serves as a dedicated domain within the API for platf
 This endpoint offers a quick way to check the overall operational status of the platform.
 
 ```csharp
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using TagShelf.Alfred.ApiWrapper.Domains.Tagshelf.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+
 // Authentication
-var alfred = await AlfredFactory.CreateWithOAuthAsync("admin@tagshelf.com", "T@gSh3lf", EnvironmentType.Staging);
+var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "password", EnvironmentType.Production);
 
 // Get the Platform Operational Status
 TagshelfStatusResult status = await alfred.Tagshelf.StatusAsync();
 
-// Print the Result
+// Print the Results
 Console.WriteLine(status);
 ```
 **Result**
@@ -131,18 +134,23 @@ ApiVersion: 1.47.6.0, DbStatus: online
 This endpoint provides information about the currently authenticated user.
 
 ```csharp
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using TagShelf.Alfred.ApiWrapper.Domains.Tagshelf.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+
 // Authentication
-var alfred = await AlfredFactory.CreateWithOAuthAsync("admin@tagshelf.com", "T@gSh3lf", EnvironmentType.Staging);
+var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "password", EnvironmentType.Production);
 
 // Get the Platform Operational Status
 WhoAmIResult whoami = await alfred.Tagshelf.WhoAmIAsync();
 
-// Print the Result
+// Print the Results
 Console.WriteLine(whoami);
 ```
 **Result**
 ```cmd
-UserName: admin@tagshelf.com, Name: Admin Tagshelf, Roles: Admin, Developer, Status: active, Company: TAGSHELF, App: , AppId: 00000000-0000-0000-0000-000000000000, RequestOriginIpAddress: 152.0.135.113:20845
+UserName: example@mail.com, Name: John Doe, Roles: Admin, Developer, Status: active, Company: TAGSHELF, App: , AppId: 00000000-0000-0000-0000-000000000000, RequestOriginIpAddress: 152.0.135.113:20845
 ```
 
 ### Conduct a Basic Connectivity Test
@@ -150,118 +158,127 @@ UserName: admin@tagshelf.com, Name: Admin Tagshelf, Roles: Admin, Developer, Sta
 The `ping` endpoint is used to perform a basic connectivity test to the platform.
 
 ```csharp
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using TagShelf.Alfred.ApiWrapper.Domains.Tagshelf.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+
 // Authentication
-var alfred = await AlfredFactory.CreateWithOAuthAsync("admin@tagshelf.com", "T@gSh3lf", EnvironmentType.Staging);
+var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "password", EnvironmentType.Production);
 
 // Get the Platform Operational Status
 PingResult ping = await alfred.Tagshelf.PingAsync();
 
-// Print the Result
+// Print the Results
 Console.WriteLine(ping);
 ```
 **Result**
 ```cmd
-Pong: admin@tagshelf.com
+Pong: example@mail.com
 ```
 
-## Deferred Sessions {#deferred-sessions-domain}
+## Deferred Sessions
 
 A Deferred Session in Alfred is a mechanism designed for asynchronous file uploads, integral to the document processing workflow. It serves as a container or grouping for files that are uploaded at different times or from various sources, but are all part of a single processing task or Job.
 
 ### Create a new Deferred Session
 
+This endpoint initiates a new Deferred Session in Alfred for asynchronous, staggered file uploads for a future Job.
 
+```csharp
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using TagShelf.Alfred.ApiWrapper.Domains.DeferredSession.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
 
+// Authentication
+var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "password", EnvironmentType.Production);
 
+// Create a Session
+CreateSessionResult sessionId = await alfred.DeferredSession.CreateAsync();
+
+// Print the Results
+Console.WriteLine(sessionId);
+```
+**Result**
+```cmd
+SessionId: 4910a915-1c79-4d10-8c2f-ffa0072bc203
+```
 
 ### Retrieve Details of a Specific Deferred Session
 
-
-
-
-
-
-## Files {#files-domain}
-
-In Alfred, a file is an individual document or data unit undergoing specialized operations tailored for document analysis and management. It is processed by the platform for tasks such as classification, optical character recognition (OCR), and data extraction. Each file, as a distinct entity, transitions through various statuses, which mark its progress in the automated workflow. 
-
-
-
-
-
-
-
-
-
-
-## Jobs {#jobs-domain}
-
-## Data Points {#data-points-domain}
-
-## Account {#account-domain}
-
-
-
-## File Operations
-
-With the Alfred client initialized, you can perform various API operations, including file uploads.
-
-### Upload File (From URL or URLs)
-
-This method allows you to upload a file from one or multiple URLs to Alfred. During the upload, you can specify metadata for the file. Note that this method triggers job processing automatically.
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| Url | string | URL of the file to upload (use url, when you have an URl to single remote file.)|
-|Urls | string[] | URLs of the files to upload. (Use urls, when you have URl's for multiple remote files. The current limit for this parameter is **100 elements**.) |
-| Source | string | Configured object storage source name. Ideal for referring to files hosted in existing cloud containers. When used, **file_name** and **container** are required. |
-|Container | string | Virtual container where the referenced remote file is located. When used, **source** and **file_name** are required.|
-| Filename | string | Unique name of the file within an object storage source. When used, **source** and **container** are required.|
-| Filenames | string[] | Array of unique names of the files within an object storage source. When used, **source** and **container** are required.|
-| Merge | boolean | Boolean value [true/false] - When set to true, will merge all of the remote files into a single PDF file. All of the remote files MUST be images. </br></br>By default this field is set to **false**. |
-| Metadata | string | JSON object or JSON array of objects containing metadata fields for a given remote file. </br></br>When merge field is set to **false**:</br></br>When using the urls field this should be a JSON object array that matches the urls field array length.</br></br>When using the url field the metadata field should be a JSON object.</br></br>When the merge field is set to true: The metadata field should be a JSON object.|
-| PropagateMetadata | boolean | This parameter enables the specification of a single metadata object to be applied across multiple files from remote URLs or remote sources. When used, `propagate_metadata` ensures that the defined metadata is consistently attached to all the specified files during their upload and processing. This feature is particularly useful for maintaining uniform metadata across a batch of files, streamlining data organization and retrieval. |
-| ParentFilePrefix | string | The `parent_file_prefix` parameter is used to specify a virtual folder destination for the uploaded files, diverging from the default 'Inbox' folder. By setting this parameter, users can organize files into specific virtual directories, enhancing file management and accessibility within Alfred's system. |
-
-#### Example: Upload File from URL
+This endpoint provides detailed information about a Deferred Session, identified by its unique `id`.
 
 ```csharp
-// Create a request object with the necessary parameters
-UploadRequest uploadRequest = new UploadRequest
-{
-   Urls = new List<string> { "https://example.com/file1.pdf", "https://example.com/file2.pdf" },
-   FileNames = new List<string> { "file1.pdf", "file2.pdf" }
-};
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using TagShelf.Alfred.ApiWrapper.Domains.DeferredSession.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
 
-// Upload remote file
-var uploadResult = await alfred.File.UploadAsync(uploadRequest);
+// Authentication
+var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "password", EnvironmentType.Production);
 
-// Handle the response
-Console.WriteLine(uploadResult.JobId);
+// Create a Session
+CreateSessionResult sessionId = await alfred.DeferredSession.CreateAsync();
 
-// Get job status
-var jobStatus = await alfred.Job.GetAsync(uploadResult.JobId);
+// Get Session Details
+SessionDetailResult sessiondetails = await alfred.DeferredSession.GetAsync(sessionId.SessionId);
 
-// Check job completion
-while (jobStatus.Stage != "completed")
-{
-   System.Threading.Thread.Sleep(1000);
-   jobStatus = await alfred.Job.GetAsync(uploadResult.JobId);
-}
-
-// Retrieve data points for each file
-var files = jobStatus.Files;
-foreach (var file in files)
-{
-   var dataResult = await alfred.DataPoint.GetValuesAsync(file.FileId);
-   Console.WriteLine(dataResult);
-}
-
+// Print the Results
+Console.WriteLine(sessiondetails);
+```
+**Result**
+```cmd
+Id: 7b3ca596-339a-4fe1-a05b-921f64fa4a42, CreationDate: 6/26/2024 7:36:36 PM, UpdateDate: 6/26/2024 7:36:36 PM, Status: open, UserName: example@mail.com, CompanyId: 286e2ed0-3626-4faa-a745-8ebf3488fbd7, JobId:
 ```
 
-### Upload File from Stream
+## Files
 
-This method uploads a file from a stream to Alfred and associates it with a specific session ID. Unlike other methods, it does not trigger job processing, making it ideal for uploading files that are part of a larger job.
+In Alfred, a file is an individual document or data unit undergoing specialized operations tailored for document analysis and management. It is processed by the platform for tasks such as classification, optical character recognition (OCR), and data extraction. Each file, as a distinct entity, transitions through various statuses, which mark its progress in the automated workflow.
+
+You can find the full list of job statuses and their description in the [Alfred Official Documentation](https://docs.tagshelf.dev/enpoints/file/file-status).
+
+### Upload Files from Remote Sources
+
+This endpoint facilitates the uploading of files from remote sources, accommodating various types of external storage like URLs, or Blob storage from cloud providers including AWS, GCP, or DigitalOcean. 
+
+In Alfred, uploading a file via this endpoint contributes to the initiation of a Job, which encompasses a series of processes over several files.
+
+You can find the full list of parameters you can use in the [Alfred Official Documentation](https://docs.tagshelf.dev/enpoints/file#upload-files-from-remote-sources).
+
+```csharp
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using AlfredApiWrapper.Domains.File.Requests;
+using TagShelf.Alfred.ApiWrapper.Domains.File.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+
+// Authentication
+var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "password", EnvironmentType.Production);
+
+// Create a Request Object with the Necessary Parameters
+UploadRequest uploadRequest = new UploadRequest
+{
+    Urls = new List<string> { "https://example.com/file1.pdf", "https://example.com/file2.pdf" },
+    FileNames = new List<string> { "file1.pdf", "file2.pdf" }
+};
+
+// Upload Remote File
+FileUploadResult uploadResult = await alfred.File.UploadAsync(uploadRequest);
+
+// Print the Results
+Console.WriteLine(uploadResult);
+```
+**Result**
+```cmd
+Job ID: ffad4bcb-0d38-47a6-9886-22e98818ee84
+```
+
+### Upload File by Stream
+
+Uploads a single remote file to the system's pipeline. Before using this endpoint, you must have the `id` of a deferred session already created.
+
+This endpoint uploads a file from a stream to Alfred and associates it with a specific session `id`. It does not trigger job processing, making it ideal for uploading files that are part of a larger job.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
@@ -270,91 +287,228 @@ This method uploads a file from a stream to Alfred and associates it with a spec
 | SessionId | Guid | Session ID to associate with the file. |
 | Metadata | string | JSON object or JSON array of objects containing metadata fields for a given remote file. |
 
-#### Example: Upload File from Stream
-
 ```csharp
-// Create a session ID
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using AlfredApiWrapper.Domains.File.Requests;
+using TagShelf.Alfred.ApiWrapper.Domains.File.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+
+// Authentication
+var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "password", EnvironmentType.Production);
+
+// Create a Deferred Session
 Guid sessionId = (await alfred.DeferredSession.CreateAsync()).SessionId;
 
-// Create a request object with the necessary parameters
+// Create a Request Object with the Necessary Parameters
 UploadFileRequest uploadFileRequest = new UploadFileRequest
 {
-   FileStream = new StreamReader("file_path\\sample.pdf").BaseStream,
-   FileName = "sample.pdf",
-   SessionId = sessionId,
-   Metadata = {}
+    FileStream = new StreamReader("file_path\\sample.pdf").BaseStream,
+    FileName = "sample.pdf",
+    SessionId = sessionId,
+    Metadata = { }
 };
 
-// Upload file from stream
-var response = await alfred.File.UploadFileAsync(uploadFileRequest);
+// Upload File From Stream
+UploadFileResult uploadFileResult = await alfred.File.UploadFileAsync(uploadFileRequest);
 
+// Print the Results
+Console.WriteLine(uploadFileResult);
+```
+**Result**
+```cmd
+File ID: 6783e660-2e97-4534-b559-5c90b4d30d41
 ```
 
-## Job Operations 
+### Get File Details by ID
 
-### Trigger Job Processing
-
-To process uploaded files, you must trigger job processing using the Job domain.
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| SessionId | string | Session ID |
-| Metadata | any | Metadata of the job |
-| PropagateMetadata | boolean | If `true` ensures that the provided metadata at the Job level is attached to all the specified Files. |
-| Merge | boolean | If `true`, when all provided Files are either images or PDFs, the system combines them into a single file for the purpose of processing. |
-| Decompose | boolean | If `true`, when the provided File is a PDF, the system will decompose it into individual pages for processing. |
-| Channel | string | Channel |
-| ParentFilePrefix | string | The `parent_file_prefix` parameter is used to specify a virtual folder destination for the uploaded files, diverging from the default 'Inbox' folder. By setting this parameter, users can organize files into specific virtual directories, enhancing file management and accessibility within Alfred's system. |
-| PageRotation | number | Page rotation |
-| Container | string | Virtual container where the referenced remote file is located.|
-| Filename | string | Unique name of the file within an object storage source.|
-| Filenames | string[] | Array of unique names of the files within an object storage source.|
-
-#### Example: Trigger Job Processing
+Get all file details by file `id`.
 
 ```csharp
-// Trigger job processing
-Guid jobId = (await alfred.Job.CreateAsync(new CreateJobRequest { SessionId = sessionId })).JobId;
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using TagShelf.Alfred.ApiWrapper.Domains.File.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
 
-// Get job status
-var jobStatus = await alfred.Job.GetAsync(jobId);
+// Authentication
+var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "password", EnvironmentType.Production);
 
-// Check job completion
-while (jobStatus.Stage != "completed")
-{
-   System.Threading.Thread.Sleep(1000);
-   jobStatus = await alfred.Job.GetAsync(jobId);
-}
+// File ID
+Guid fileid = Guid.Parse("6783e660-2e97-4534-b559-5c90b4d30d41");
 
-// Check if the job is completed if not, wait for it to complete
-while (jobstatus != "completed")
-{
-   // Sleep for 1 second to avoid hitting the API rate limit
-   System.Threading.Thread.Sleep(1000);
-   jobstatus = alfred.Job.GetAsync(jobId).Result.Stage;
-}
+// Upload File From Stream
+FileDetailResult filedetail = await alfred.File.GetAsync(fileid);
 
+// Print the Results
+Console.WriteLine(filedetail);
+```
+**Result**
+```cmd
+Id: 6783e660-2e97-4534-b559-5c90b4d30d41, FileName: sample.pdf, Status: uploaded, ContentType: application/octet-stream, FileSize: 540497 bytes, CreationDate: 6/27/2024 6:51:42 PM
 ```
 
-## Data Point Operations
+### Download File by ID
 
-### Retrive Data Points
-
-After job completion, retrieve data points for each file using the DataPoint domain.
-
-#### Example: Retrieve Data Points
+Returns a byte stream representing the data for a given file.
 
 ```csharp
-// Get the files to retrieve the data points
-var files = alfred.Job.GetAsync(jobId).Result.Files;
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using TagShelf.Alfred.ApiWrapper.Domains.File.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
 
-// Get the data points for each file
-foreach (var file in files)
+// Authentication
+var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "password", EnvironmentType.Production);
+
+// File ID
+Guid fileid = Guid.Parse("6783e660-2e97-4534-b559-5c90b4d30d41");
+
+// Upload File From Stream
+FileDownloadResult download = await alfred.File.DownloadAsync(fileid);
+
+// Print the Results
+Console.WriteLine(download);
+```
+**Result**
+Returns the File as a stream.
+
+## Jobs
+
+A Job in Alfred represents a single unit of work that performs a sequence of operations on one or more files for the purpose of document classification, extraction, and indexing. It is an asynchronous entity, orchestrated by a state machine that manages its progress through various stages.
+
+You can find the full list of job stages and their description in the [Alfred Official Documentation](https://docs.tagshelf.dev/enpoints/job/job-stages).
+
+### Create a New Job and Close the Deferred Upload Session
+
+This endpoint is used for creating a new Job in Alfred. It serves a dual purpose: it finalizes the deferred upload session, ensuring that all files needed for the Job are uploaded, and initiates the Job itself.
+
+The only parameter that is **required** for this endpoint is `session_id`. You can find the full list of parameters you can use in the [Alfred Official Documentation](https://docs.tagshelf.dev/enpoints/job#create-a-new-job-and-close-the-deferred-upload-session).
+
+```csharp
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core; 
+using TagShelf.Alfred.ApiWrapper.Domains.Job.Requests;
+using TagShelf.Alfred.ApiWrapper.Domains.Job.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+
+// Authentication
+var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "password", EnvironmentType.Production);
+
+// Create a Deferred Session
+Guid sessionId = (await alfred.DeferredSession.CreateAsync()).SessionId;
+
+// Create a Request Object with the Necessary Parameters 
+CreateJobRequest request = new CreateJobRequest
 {
-   var dataResult = alfred.DataPoint.GetValuesAsync(file.FileId).Result;
-   Console.WriteLine(dataResult);
-}
+    SessionId = sessionId
+};
 
+// Create a New Job
+CreateJobResult job = await alfred.Job.CreateAsync(request);
+
+// Print the Results
+Console.WriteLine(job);
+```
+**Result**
+```cmd
+Job ID: ffad4bcb-0d38-47a6-9886-22e98818ee84
+```
+
+### Retrieve Detailed Information About a Specific Job
+
+This endpoint provides comprehensive details about a Job identified by its unique `id`. 
+
+```csharp
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core; 
+using TagShelf.Alfred.ApiWrapper.Domains.Job.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+
+// Authentication
+var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "password", EnvironmentType.Production);
+
+// Job ID
+Guid jobid = Guid.Parse("ffad4bcb-0d38-47a6-9886-22e98818ee84");
+
+// Get Job Details
+JobDetailResult jobdetail = await alfred.Job.GetAsync(jobid);
+
+// Print the Results
+Console.WriteLine(jobdetail);
+```
+**Result**
+```cmd
+ffad4bcb-0d38-47a6-9886-22e98818ee84 - example@mail.com - completed - 6/26/2024 8:43:57 PM
+```
+
+## Data Points
+
+> **Important:** Data Points where previously known as Metadata.
+
+In Alfred's Intelligent Document Processing (IDP) platform, the concept of data points is intricately linked with tags and plays a vital role in extracting specific data points from content, particularly files. Data points in Alfred are unique in that they are associated with a specific tag and encompass information intended to be extracted based on the file's classified content. 
+
+Data point values are critical components that represent the extracted information based on the data points defined for each tag.
+
+### Get Data Points Values from File ID
+
+Get a list of metadata values from File ID
+
+```csharp
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using TagShelf.Alfred.ApiWrapper.Domains.DataPoint.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+
+// Authentication
+var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "password", EnvironmentType.Production);
+
+// File ID
+Guid fileid = Guid.Parse("010065f8-c515-465b-9bd4-13a1fd36e908");
+
+// Get the Data Point Values
+List<DataPointResult> datapointvalues = await alfred.DataPoint.GetValuesAsync(fileid);
+
+// Print the Results
+Console.WriteLine(datapointvalues);
+```
+**Result**
+```cmd
+Id: c40e0384-9d4b-4e12-83e6-29a181f31254, FileLogId: 9ddb16be-2875-4891-9edc-ec457adc252c, MetadataId: 813966a3-f340-42c7-a1eb-188718c46a8a, MetadataName: InvoiceNo, Value: 222436, ClassificationScore: 1.0
+```
+
+## Account
+
+This namespace is designed to facilitate crucial account-related activities and insights. It encompasses a range of functionalities essential for enhancing user interaction and management within the platform.
+
+### Set a Webhook for a Given Account
+
+Sets a web hook for a given account. An HTTP end-point will get notified every time an event is triggered within the system.
+
+```csharp
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using TagShelf.Alfred.ApiWrapper.Domains.Account.Requests;
+using TagShelf.Alfred.ApiWrapper.Domains.Account.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+
+// Authentication
+var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "password", EnvironmentType.Production);
+
+// Create a Request Object with the Necessary Parameters 
+WebhookSetupRequest request = new WebhookSetupRequest
+{
+    Url = "https://my.webhook.co/path"
+};
+
+// Set a Webhook for a Given Account
+WebhookSetupResult webhook = await alfred.Account.SetupWebhookAsync(request);
+
+// Print the Results
+Console.WriteLine(webhook);
+```
+**Result**
+```cmd
+Id: 559167cb-4c76-4e28-bf15-34cbf614119c, Url: https://my.webhook.co/path
 ```
 
 # Notes
