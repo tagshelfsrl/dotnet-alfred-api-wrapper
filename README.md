@@ -2,7 +2,7 @@
 
 The `TagShelf.Alfred.ApiWrapper` is a comprehensive .NET library designed to facilitate seamless interactions with the Alfred API. It's tailored to support a wide range of .NET applications, from modern .NET Core and .NET Standard projects to legacy .NET Framework 4.7.2 applications, providing a robust, strongly-typed interface for efficient development. It includes specialized domains for handling [Deferred Sessions](#deferred-sessions), [Files](#files), [Jobs](#jobs) and [Data Points](#data-points).
 
-This library serves as a wrapper for our HTTP API, which you can find the documentation for in this link https://docs.tagshelf.dev/
+This library serves as a wrapper for our REST API, which you can find the documentation for in this link https://docs.tagshelf.dev/
 
 ## Alfred
 
