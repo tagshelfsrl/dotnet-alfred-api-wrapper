@@ -1,6 +1,8 @@
 # Overview
 
-The `TagShelf.Alfred.ApiWrapper` is a comprehensive .NET library designed to facilitate seamless interactions with the Alfred API. It's tailored to support a wide range of .NET applications, from modern .NET Core and .NET Standard projects to legacy .NET Framework 4.7.2 applications, providing a robust, strongly-typed interface for efficient development. It includes specialized domains for handling Deferred Sessions, Files, Jobs and Data Points.
+The `TagShelf.Alfred.ApiWrapper` is a comprehensive .NET library designed to facilitate seamless interactions with the Alfred API. It's tailored to support a wide range of .NET applications, from modern .NET Core and .NET Standard projects to legacy .NET Framework 4.7.2 applications, providing a robust, strongly-typed interface for efficient development. It includes specialized domains for handling [Deferred Sessions](#deferred-sessions), [Files](#files), [Jobs](#jobs) and [Data Points](#data-points).
+
+This library serves as a wrapper for our HTTP API, which you can find the documentation for in this link https://docs.tagshelf.dev/
 
 ## Alfred
 
@@ -53,7 +55,7 @@ You will always use the production environment for all your integrations using t
 
 # Authentication
 
-Alfred supports three authentication methods: OAuth, HMAC, and App API Key. Each method is suited for different scenarios. To obtain the necessary credentials for the following authentication methods, please refer to the [Alfred API documentation](https://docs.tagshelf.dev/authentication) or contact the Alfred support team at support@tagshelf.com.
+Alfred supports three authentication methods: OAuth, HMAC, and API Key. Each method is suited for different scenarios. To obtain the necessary credentials for the following authentication methods, please refer to the [Alfred API documentation](https://docs.tagshelf.dev/authentication) or contact the Alfred support team at support@tagshelf.com.
 
 |OAuth||
 |--|--|
@@ -79,7 +81,7 @@ To initialize the client for HMAC authentication, provide the secret key and pub
 var alfred = await AlfredFactory.CreateWithHmacAsync("secret_key", "public_key", EnvironmentType.Production);
 ```
 
-|App API Key||
+|API Key||
 |--|--|
 | **When to Use**    | Recommended for server-to-server communication, automated processes, and background services where user interaction is not feasible.|
 | **Benefits**       | Non-interactive yet robust authentication, simplicity, and easy access control.|
@@ -120,13 +122,6 @@ var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "passw
 
 // Get the Platform Operational Status
 TagshelfStatusResult status = await alfred.Tagshelf.StatusAsync();
-
-// Print the Results
-Console.WriteLine(status);
-```
-**Result**
-```cmd
-ApiVersion: 1.47.6.0, DbStatus: online
 ```
 
 ### Retrieve User Identity Information
@@ -144,13 +139,6 @@ var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "passw
 
 // Get the Platform Operational Status
 WhoAmIResult whoami = await alfred.Tagshelf.WhoAmIAsync();
-
-// Print the Results
-Console.WriteLine(whoami);
-```
-**Result**
-```cmd
-UserName: example@mail.com, Name: John Doe, Roles: Admin, Developer, Status: active, Company: TAGSHELF, App: , AppId: 00000000-0000-0000-0000-000000000000, RequestOriginIpAddress: 152.0.135.113:20845
 ```
 
 ### Conduct a Basic Connectivity Test
@@ -168,13 +156,6 @@ var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "passw
 
 // Get the Platform Operational Status
 PingResult ping = await alfred.Tagshelf.PingAsync();
-
-// Print the Results
-Console.WriteLine(ping);
-```
-**Result**
-```cmd
-Pong: example@mail.com
 ```
 
 ## Deferred Sessions
@@ -196,13 +177,6 @@ var alfred = await AlfredFactory.CreateWithOAuthAsync("example@mail.com", "passw
 
 // Create a Session
 CreateSessionResult sessionId = await alfred.DeferredSession.CreateAsync();
-
-// Print the Results
-Console.WriteLine(sessionId);
-```
-**Result**
-```cmd
-SessionId: 4910a915-1c79-4d10-8c2f-ffa0072bc203
 ```
 
 ### Retrieve Details of a Specific Deferred Session
@@ -223,13 +197,6 @@ CreateSessionResult sessionId = await alfred.DeferredSession.CreateAsync();
 
 // Get Session Details
 SessionDetailResult sessiondetails = await alfred.DeferredSession.GetAsync(sessionId.SessionId);
-
-// Print the Results
-Console.WriteLine(sessiondetails);
-```
-**Result**
-```cmd
-Id: 7b3ca596-339a-4fe1-a05b-921f64fa4a42, CreationDate: 6/26/2024 7:36:36 PM, UpdateDate: 6/26/2024 7:36:36 PM, Status: open, UserName: example@mail.com, CompanyId: 286e2ed0-3626-4faa-a745-8ebf3488fbd7, JobId:
 ```
 
 ## Files
@@ -265,13 +232,6 @@ UploadRequest uploadRequest = new UploadRequest
 
 // Upload Remote File
 FileUploadResult uploadResult = await alfred.File.UploadAsync(uploadRequest);
-
-// Print the Results
-Console.WriteLine(uploadResult);
-```
-**Result**
-```cmd
-Job ID: ffad4bcb-0d38-47a6-9886-22e98818ee84
 ```
 
 ### Upload File by Stream
@@ -311,13 +271,6 @@ UploadFileRequest uploadFileRequest = new UploadFileRequest
 
 // Upload File From Stream
 UploadFileResult uploadFileResult = await alfred.File.UploadFileAsync(uploadFileRequest);
-
-// Print the Results
-Console.WriteLine(uploadFileResult);
-```
-**Result**
-```cmd
-File ID: 6783e660-2e97-4534-b559-5c90b4d30d41
 ```
 
 ### Get File Details by ID
@@ -338,13 +291,6 @@ Guid fileid = Guid.Parse("6783e660-2e97-4534-b559-5c90b4d30d41");
 
 // Upload File From Stream
 FileDetailResult filedetail = await alfred.File.GetAsync(fileid);
-
-// Print the Results
-Console.WriteLine(filedetail);
-```
-**Result**
-```cmd
-Id: 6783e660-2e97-4534-b559-5c90b4d30d41, FileName: sample.pdf, Status: uploaded, ContentType: application/octet-stream, FileSize: 540497 bytes, CreationDate: 6/27/2024 6:51:42 PM
 ```
 
 ### Download File by ID
@@ -365,12 +311,7 @@ Guid fileid = Guid.Parse("6783e660-2e97-4534-b559-5c90b4d30d41");
 
 // Upload File From Stream
 FileDownloadResult download = await alfred.File.DownloadAsync(fileid);
-
-// Print the Results
-Console.WriteLine(download);
 ```
-**Result**
-Returns the File as a stream.
 
 ## Jobs
 
@@ -405,13 +346,6 @@ CreateJobRequest request = new CreateJobRequest
 
 // Create a New Job
 CreateJobResult job = await alfred.Job.CreateAsync(request);
-
-// Print the Results
-Console.WriteLine(job);
-```
-**Result**
-```cmd
-Job ID: ffad4bcb-0d38-47a6-9886-22e98818ee84
 ```
 
 ### Retrieve Detailed Information About a Specific Job
@@ -432,13 +366,6 @@ Guid jobid = Guid.Parse("ffad4bcb-0d38-47a6-9886-22e98818ee84");
 
 // Get Job Details
 JobDetailResult jobdetail = await alfred.Job.GetAsync(jobid);
-
-// Print the Results
-Console.WriteLine(jobdetail);
-```
-**Result**
-```cmd
-ffad4bcb-0d38-47a6-9886-22e98818ee84 - example@mail.com - completed - 6/26/2024 8:43:57 PM
 ```
 
 ## Data Points
@@ -451,7 +378,7 @@ Data point values are critical components that represent the extracted informati
 
 ### Get Data Points Values from File ID
 
-Get a list of metadata values from File ID
+Get a list of metadata values from File ID.
 
 ```csharp
 // Imports
@@ -467,13 +394,6 @@ Guid fileid = Guid.Parse("010065f8-c515-465b-9bd4-13a1fd36e908");
 
 // Get the Data Point Values
 List<DataPointResult> datapointvalues = await alfred.DataPoint.GetValuesAsync(fileid);
-
-// Print the Results
-Console.WriteLine(datapointvalues);
-```
-**Result**
-```cmd
-Id: c40e0384-9d4b-4e12-83e6-29a181f31254, FileLogId: 9ddb16be-2875-4891-9edc-ec457adc252c, MetadataId: 813966a3-f340-42c7-a1eb-188718c46a8a, MetadataName: InvoiceNo, Value: 222436, ClassificationScore: 1.0
 ```
 
 ## Account
@@ -502,13 +422,6 @@ WebhookSetupRequest request = new WebhookSetupRequest
 
 // Set a Webhook for a Given Account
 WebhookSetupResult webhook = await alfred.Account.SetupWebhookAsync(request);
-
-// Print the Results
-Console.WriteLine(webhook);
-```
-**Result**
-```cmd
-Id: 559167cb-4c76-4e28-bf15-34cbf614119c, Url: https://my.webhook.co/path
 ```
 
 # Notes
