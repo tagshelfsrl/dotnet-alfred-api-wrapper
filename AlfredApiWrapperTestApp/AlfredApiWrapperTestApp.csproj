@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="TagShelf.Alfred.ApiWrapper" Version="0.2.0" />
+    <PackageReference Include="TagShelf.Alfred.ApiWrapper" Version="[0.2.0,)" />
   </ItemGroup>
 
 </Project>
