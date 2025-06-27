@@ -31,7 +31,7 @@ namespace AlfredApiWrapper.Domains.File.Requests
         public object Metadata { get; set; }
 
         [JsonProperty("priority")]
-        public Priority Priority { get; set; } = Priority.Normal;
+        public JobPriority JobPriority { get; set; } = JobPriority.Normal;
 
         [JsonProperty("propagate_metadata")]
         public bool? PropagateMetadata { get; set; }

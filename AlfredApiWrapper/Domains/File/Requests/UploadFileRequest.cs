@@ -9,6 +9,5 @@ namespace AlfredApiWrapper.Domains.File.Requests
         public string FileName { get; set; }
         public Guid SessionId { get; set; }
         public string Metadata { get; set; }
-        public Priority Priority { get; set; } = Priority.Normal;
     }
 }
