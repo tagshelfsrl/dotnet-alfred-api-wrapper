@@ -5,7 +5,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <PackageId>TagShelf.Alfred.ApiWrapper</PackageId>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <Authors>Raúl Roa (raul@tagshelf.com)</Authors>
     <Company>Tagshelf</Company>
     <Description>A comprehensive .NET library designed to facilitate seamless interactions with the Alfred API.</Description>
