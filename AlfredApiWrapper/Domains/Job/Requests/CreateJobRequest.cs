@@ -38,5 +38,9 @@ namespace TagShelf.Alfred.ApiWrapper.Domains.Job.Requests
 
         [JsonProperty("file_names")]
         public List<string> FileNames { get; set; }
+        
+        [JsonProperty("priority")]
+        public JobPriority JobPriority { get; set; } = JobPriority.Normal;
+
     }
 }

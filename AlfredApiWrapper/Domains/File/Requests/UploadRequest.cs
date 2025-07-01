@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
 
 namespace AlfredApiWrapper.Domains.File.Requests
 {
@@ -28,6 +29,9 @@ namespace AlfredApiWrapper.Domains.File.Requests
 
         [JsonProperty("metadata")]
         public object Metadata { get; set; }
+
+        [JsonProperty("priority")]
+        public JobPriority JobPriority { get; set; } = JobPriority.Normal;
 
         [JsonProperty("propagate_metadata")]
         public bool? PropagateMetadata { get; set; }
