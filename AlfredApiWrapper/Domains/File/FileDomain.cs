@@ -7,6 +7,7 @@ using AlfredApiWrapper.Domains.File.Requests;
 using Newtonsoft.Json;
 using TagShelf.Alfred.ApiWrapper.Core;
 using TagShelf.Alfred.ApiWrapper.Domains.File.Results;
+using TagShelf.Alfred.ApiWrapper.Utilities;
 
 namespace TagShelf.Alfred.ApiWrapper.Domains.File
 {
@@ -87,7 +88,14 @@ namespace TagShelf.Alfred.ApiWrapper.Domains.File
                     Name = "\"file\"",
                     FileName = "\"" + request.FileName + "\""
                 };
-                fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
+                // Use the caller-provided content type when available; otherwise
+                // infer it from the file name extension so the server receives a
+                // meaningful Content-Type instead of a generic octet-stream.
+                var contentType = !string.IsNullOrEmpty(request.ContentType)
+                    ? request.ContentType
+                    : MimeTypeHelper.GetMimeType(request.FileName);
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
                 content.Add(fileContent);
 
                 content.Add(new StringContent(request.SessionId.ToString()), "session_id");
