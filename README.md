@@ -24,6 +24,8 @@ Alfred is a powerful document processing platform that enables you to extract, i
 
 - **Domain-Specific Operations**: Offers specialized support for File and Job operations, enabling developers to intuitively manage and interact with API resources.
 
+- **Real-Time Events**: Streams job and file events as they happen over Socket.IO through a standalone real-time client, removing the need for polling.
+
 - **Cross-Platform Compatibility**: Designed to be fully compatible across .NET Core, .NET Standard, and .NET Framework 4.7.2, ensuring broad usability in diverse development environments.
 
 - **Minimal Dependencies**: Crafted to minimize external dependencies, facilitating an easier integration and deployment process with reduced conflict risk.
@@ -422,6 +424,100 @@ WebhookSetupRequest request = new WebhookSetupRequest
 
 // Set a Webhook for a Given Account
 WebhookSetupResult webhook = await alfred.Account.SetupWebhookAsync(request);
+```
+
+## Real-Time Events
+
+The `AlfredRealTimeClient` is a standalone client that streams events from Alfred in real time over [Socket.IO](https://socket.io/). It authenticates with an API key and lets you react to job and file activity as it happens — no polling required.
+
+The server forwards every event on one of two aggregate channels — `job_event` and `file_event`. The specific event type is carried in the payload's inner `event_name` field (for example `alfred_event_job_start`), exposed as `RealTimeEvent.EventName`.
+
+### Connect and Listen to All Job and File Events
+
+```csharp
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+using TagShelf.Alfred.ApiWrapper.RealTime;
+
+// Create a real-time client (no I/O happens yet)
+var realtime = AlfredFactory.CreateRealTimeClient("your-api-key", EnvironmentType.Production);
+
+// Optional: observe the connection life-cycle
+realtime.Connected    += (s, e)      => Console.WriteLine("Connected!");
+realtime.Disconnected += (s, reason) => Console.WriteLine($"Disconnected: {reason}");
+realtime.Error        += (s, error)  => Console.WriteLine($"Error: {error}");
+
+// Register handlers for every job and file event
+realtime.OnJobEvent(evt =>
+    Console.WriteLine($"Job event: {evt.EventName} (job {evt.JobId})"));
+
+realtime.OnFileEvent(evt =>
+    Console.WriteLine($"File event: {evt.EventName}"));
+
+// Establish the connection (throws TimeoutException if it cannot connect in time)
+await realtime.ConnectAsync();
+
+// ... keep your application alive to receive events ...
+
+await realtime.DisconnectAsync();
+realtime.Dispose();
+```
+
+### Listen to a Specific Event Type
+
+Register a handler that fires only when the inner `event_name` matches. Well-known values are provided as constants in `JobEventNames` and `FileEventNames`.
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.RealTime;
+
+// Only fire when a job starts
+realtime.On(RealTimeChannels.JobEvent, JobEventNames.JobStart, evt =>
+    Console.WriteLine($"Job {evt.JobId} started"));
+
+// Only fire when a file finishes processing
+realtime.On(RealTimeChannels.FileEvent, FileEventNames.FileDone, evt =>
+    Console.WriteLine($"File finished: {evt.Payload["file_name"]}"));
+```
+
+### Accessing the Payload
+
+Each `RealTimeEvent` exposes the common discriminator fields (`EventName`, `CompanyId`, `JobId`), the full raw payload as a Newtonsoft `JObject` (`Payload`), and a `GetData<T>()` helper to deserialize into your own model. Decorate the model with `[JsonProperty("snake_case")]` attributes to map fields.
+
+```csharp
+using Newtonsoft.Json;
+using TagShelf.Alfred.ApiWrapper.RealTime;
+
+public class FileStatusPayload
+{
+    [JsonProperty("event_name")]        public string EventName { get; set; }
+    [JsonProperty("file_status")]       public string FileStatus { get; set; }
+    [JsonProperty("classification_score")] public double ClassificationScore { get; set; }
+}
+
+realtime.OnFileEvent(evt =>
+{
+    var data = evt.GetData<FileStatusPayload>();
+    Console.WriteLine($"{data.FileStatus} ({data.ClassificationScore:P0})");
+});
+```
+
+### Configuration
+
+Pass a `RealTimeOptions` instance to tune the client. All values are optional:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `RealTimeUrl` | environment default | Overrides the server URL (useful for testing). |
+| `Reconnection` | `true` | Automatically reconnect when the connection drops. |
+| `ReconnectionAttempts` | `int.MaxValue` | Maximum number of reconnection attempts. |
+| `ReconnectionDelay` | `1000` | Delay between reconnection attempts, in milliseconds. |
+| `ConnectionTimeout` | `20000` | Handshake timeout for `ConnectAsync`, in milliseconds. |
+| `Verbose` | `false` | Emit diagnostic messages to the console. |
+
+```csharp
+var options = new RealTimeOptions { Verbose = true, ConnectionTimeout = 10000 };
+var realtime = AlfredFactory.CreateRealTimeClient("your-api-key", EnvironmentType.Production, options);
 ```
 
 # Notes
