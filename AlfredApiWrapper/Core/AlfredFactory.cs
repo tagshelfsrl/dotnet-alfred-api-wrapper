@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using TagShelf.Alfred.ApiWrapper.Authentication;
 using TagShelf.Alfred.ApiWrapper.Enumerations;
+using TagShelf.Alfred.ApiWrapper.RealTime;
 
 namespace TagShelf.Alfred.ApiWrapper.Core
 {
@@ -72,5 +73,21 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         }
 
         // Additional factory methods for other authentication strategies can be included here.
+
+        /// <summary>
+        /// Creates a standalone real-time client for consuming Alfred events over Socket.IO.
+        /// </summary>
+        /// <param name="apiKey">The API key used to authenticate the socket connection.</param>
+        /// <param name="environment">The target environment. Determines the default server URL. Defaults to Production.</param>
+        /// <param name="options">Optional client options. When <c>null</c>, defaults are used.</param>
+        /// <returns>An unconnected <see cref="AlfredRealTimeClient"/>. Register handlers, then call <see cref="AlfredRealTimeClient.ConnectAsync"/>.</returns>
+        /// <remarks>
+        /// This method performs no I/O; the connection is established explicitly via
+        /// <see cref="AlfredRealTimeClient.ConnectAsync"/>, which is why it is not asynchronous.
+        /// </remarks>
+        public static AlfredRealTimeClient CreateRealTimeClient(string apiKey, EnvironmentType environment = EnvironmentType.Production, RealTimeOptions options = null)
+        {
+            return new AlfredRealTimeClient(apiKey, environment, options);
+        }
     }
 }
