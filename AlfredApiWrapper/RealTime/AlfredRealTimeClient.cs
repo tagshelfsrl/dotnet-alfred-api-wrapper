@@ -210,10 +210,20 @@ namespace TagShelf.Alfred.ApiWrapper.RealTime
 
         private void HandleRaw(string channel, SocketIOResponse response)
         {
+            Dispatch(channel, ExtractJson(response));
+        }
+
+        /// <summary>
+        /// Parses a raw JSON payload into a <see cref="RealTimeEvent"/> and routes it to the registered
+        /// handlers. Parse failures and handler exceptions are surfaced via the <see cref="Error"/> event
+        /// rather than propagating, so a single bad event or handler cannot tear down the receive loop.
+        /// </summary>
+        internal void Dispatch(string channel, string json)
+        {
             RealTimeEvent realTimeEvent;
             try
             {
-                realTimeEvent = RealTimeEvent.FromJson(channel, ExtractJson(response));
+                realTimeEvent = RealTimeEvent.FromJson(channel, json);
             }
             catch (Exception ex)
             {
