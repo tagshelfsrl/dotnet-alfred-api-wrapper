@@ -1,8 +1,10 @@
 using Newtonsoft.Json;
+using TagShelf.Alfred.ApiWrapper.Core;
 using TagShelf.Alfred.ApiWrapper.Domains.DataPoint.Results;
 using TagShelf.Alfred.ApiWrapper.Domains.DeferredSession.Results;
 using TagShelf.Alfred.ApiWrapper.Domains.File.Results;
 using TagShelf.Alfred.ApiWrapper.Domains.Job.Results;
+using TagShelf.Alfred.ApiWrapper.Domains.Tag.Results;
 
 namespace AlfredApiWrapperTests.Dtos;
 
@@ -143,6 +145,71 @@ public class DtoRoundTripTests
 
         Assert.Equal("open", result.Status);
         Assert.Equal("j1", result.JobId);
+    }
+
+    [Fact]
+    public void TagDetailResult_FullRoundTrip()
+    {
+        var json = """
+        {
+          "id": "11111111-1111-1111-1111-111111111111", "name": "Invoice", "slug": "invoice",
+          "description": "Vendor invoices",
+          "company_id": "22222222-2222-2222-2222-222222222222",
+          "datapoints": [
+            { "id": "99999999-9999-9999-9999-999999999999", "name": "Total", "field_key": "total",
+              "display_text": "Total Amount", "data_type": "number", "field_type": "text",
+              "value_source": "visual", "required": true, "hidden": false, "read_only": true }
+          ],
+          "visual_extraction": { "model": "gpt-4" }
+        }
+        """;
+
+        var result = RoundTrip<TagDetailResult>(json);
+
+        Assert.Equal("Invoice", result.Name);
+        Assert.Equal("Vendor invoices", result.Description);
+        Assert.Single(result.DataPoints);
+        Assert.Equal(Guid.Parse("99999999-9999-9999-9999-999999999999"), result.DataPoints[0].Id);
+        Assert.Equal("Total Amount", result.DataPoints[0].DisplayText);
+        Assert.True(result.DataPoints[0].ReadOnly);
+        _ = result.DataPoints[0].ToString();
+        Assert.NotNull(result.VisualExtraction);
+    }
+
+    [Fact]
+    public void PagedTagResult_RoundTrip()
+    {
+        var json = """
+        {
+          "result": [ { "id": "11111111-1111-1111-1111-111111111111", "name": "Invoice", "slug": "invoice", "description": "d" } ],
+          "total": 7, "page": 1, "page_size": 50
+        }
+        """;
+
+        var result = RoundTrip<PagedResult<TagResult>>(json);
+
+        Assert.Equal(7, result.Total);
+        Assert.Equal(1, result.Page);
+        Assert.Equal(50, result.PageSize);
+        Assert.Single(result.Result);
+        Assert.Equal("Invoice", result.Result[0].Name);
+    }
+
+    [Fact]
+    public void TagListAndMutationResults_RoundTrip()
+    {
+        var id = Guid.NewGuid();
+
+        var tag = RoundTrip<TagResult>(
+            $$"""{ "id": "{{id}}", "name": "Invoice", "slug": "invoice", "description": "d" }""");
+        Assert.Equal("Invoice", tag.Name);
+
+        var created = RoundTrip<CreateTagResult>(
+            $$"""{ "id": "{{id}}", "warnings": ["w1", "w2"] }""");
+        Assert.Equal(2, created.Warnings.Count);
+
+        var updated = RoundTrip<UpdateTagResult>($$"""{ "id": "{{id}}" }""");
+        Assert.Equal(id, updated.Id);
     }
 
     [Fact]

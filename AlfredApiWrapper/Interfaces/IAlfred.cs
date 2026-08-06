@@ -3,6 +3,7 @@ using TagShelf.Alfred.ApiWrapper.Domains.DataPoint;
 using TagShelf.Alfred.ApiWrapper.Domains.DeferredSession;
 using TagShelf.Alfred.ApiWrapper.Domains.File;
 using TagShelf.Alfred.ApiWrapper.Domains.Job;
+using TagShelf.Alfred.ApiWrapper.Domains.Tag;
 using TagShelf.Alfred.ApiWrapper.Domains.Tagshelf;
 
 namespace TagShelf.Alfred.ApiWrapper.Core
@@ -41,5 +42,10 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         /// Provides access to data point-related operations.
         /// </summary>
         DataPointDomain DataPoint { get; }
+
+        /// <summary>
+        /// Provides access to tag-related operations.
+        /// </summary>
+        TagDomain Tag { get; }
     }
 }

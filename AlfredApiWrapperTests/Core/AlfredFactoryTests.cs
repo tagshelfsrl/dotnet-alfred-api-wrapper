@@ -46,5 +46,6 @@ public class AlfredFactoryTests
         Assert.NotNull(alfred.Tagshelf);
         Assert.NotNull(alfred.DeferredSession);
         Assert.NotNull(alfred.DataPoint);
+        Assert.NotNull(alfred.Tag);
     }
 }
