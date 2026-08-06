@@ -71,4 +71,75 @@ public class AlfredRealTimeClientTests
         Assert.False(options.Verbose);
         Assert.Null(options.RealTimeUrl);
     }
+
+    [Fact]
+    public void Dispatch_InvokesChannelAndEventNameHandlers()
+    {
+        using var client = AlfredFactory.CreateRealTimeClient("key");
+        var channelHits = 0;
+        string? filteredEventName = null;
+        client.OnJobEvent(_ => channelHits++);
+        client.On(RealTimeChannels.JobEvent, JobEventNames.JobStart, e => filteredEventName = e.EventName);
+
+        client.Dispatch(RealTimeChannels.JobEvent,
+            $$"""{ "event_name": "{{JobEventNames.JobStart}}", "job_id": "j1" }""");
+
+        Assert.Equal(1, channelHits);
+        Assert.Equal(JobEventNames.JobStart, filteredEventName);
+    }
+
+    [Fact]
+    public void Dispatch_EventNameHandler_DoesNotFireForOtherEvents()
+    {
+        using var client = AlfredFactory.CreateRealTimeClient("key");
+        var startHits = 0;
+        client.On(RealTimeChannels.JobEvent, JobEventNames.JobStart, _ => startHits++);
+
+        client.Dispatch(RealTimeChannels.JobEvent,
+            $$"""{ "event_name": "{{JobEventNames.JobCreate}}" }""");
+
+        Assert.Equal(0, startHits);
+    }
+
+    [Fact]
+    public void Dispatch_MalformedJson_RaisesErrorEvent_WithoutThrowing()
+    {
+        using var client = AlfredFactory.CreateRealTimeClient("key",
+            EnvironmentType.Production, new RealTimeOptions { Verbose = true });
+        string? error = null;
+        client.Error += (_, e) => error = e;
+
+        client.Dispatch(RealTimeChannels.JobEvent, "{ this is not json");
+
+        Assert.NotNull(error);
+        Assert.Contains("Failed to parse", error);
+    }
+
+    [Fact]
+    public void Dispatch_HandlerThatThrows_RaisesErrorEvent_AndOtherHandlersStillRun()
+    {
+        using var client = AlfredFactory.CreateRealTimeClient("key",
+            EnvironmentType.Production, new RealTimeOptions { Verbose = true });
+        string? error = null;
+        var secondHandlerRan = false;
+        client.Error += (_, e) => error = e;
+        client.OnFileEvent(_ => throw new InvalidOperationException("boom"));
+        client.OnFileEvent(_ => secondHandlerRan = true);
+
+        client.Dispatch(RealTimeChannels.FileEvent,
+            $$"""{ "event_name": "{{FileEventNames.FileDone}}" }""");
+
+        Assert.NotNull(error);
+        Assert.Contains("Handler error", error);
+        Assert.True(secondHandlerRan);
+    }
+
+    [Fact]
+    public async Task DisconnectAsync_WhenNotConnected_CompletesQuietly()
+    {
+        using var client = AlfredFactory.CreateRealTimeClient("key");
+
+        await client.DisconnectAsync(); // no connection established; must not throw
+        Assert.False(client.IsConnected);
+    }
 }

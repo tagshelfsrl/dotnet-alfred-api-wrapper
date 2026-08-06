@@ -18,9 +18,18 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         /// <summary>
         /// Initializes a new instance of the HttpApiClient class.
         /// </summary>
-        public HttpApiClient()
+        public HttpApiClient() : this(new HttpClientHandler())
         {
-            _httpClient = new HttpClient();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the HttpApiClient class using the supplied message handler.
+        /// Intended for testing, where a fake handler supplies canned responses in place of the network.
+        /// </summary>
+        /// <param name="handler">The message handler that processes outgoing requests.</param>
+        internal HttpApiClient(HttpMessageHandler handler)
+        {
+            _httpClient = new HttpClient(handler);
             _clientIdentifier = Guid.NewGuid().ToString(); // Unique identifier for this client instance
             _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"dotnet-alfred-api-wrapper/{_clientIdentifier}");
         }
@@ -33,6 +42,22 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         {
             _httpClient.BaseAddress = new Uri(baseAddress);
             // _httpClient.DefaultRequestHeaders.Add("Content-Type", "application/json");
+        }
+
+        /// <summary>
+        /// Gets the configured base address, or <c>null</c> if none has been set. For testing.
+        /// </summary>
+        internal Uri BaseAddress => _httpClient.BaseAddress;
+
+        /// <summary>
+        /// Returns the value(s) of a default request header, or <c>null</c> when absent. For testing.
+        /// </summary>
+        /// <param name="name">The header name.</param>
+        internal string GetDefaultHeaderValue(string name)
+        {
+            return _httpClient.DefaultRequestHeaders.TryGetValues(name, out var values)
+                ? string.Join(",", values)
+                : null;
         }
 
         /// <summary>
