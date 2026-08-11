@@ -400,6 +400,27 @@ Guid fileid = Guid.Parse("010065f8-c515-465b-9bd4-13a1fd36e908");
 List<DataPointResult> datapointvalues = await alfred.DataPoint.GetValuesAsync(fileid);
 ```
 
+Each `DataPointResult` includes its `FieldKey` and, when the platform produced one, a `NormalizedValue`. When a data point was validated, its `Validation` property is populated (otherwise `null`); it reports the overall `Status`, a per-validator `Results` list, and a roll-up `Summary`.
+
+```csharp
+foreach (var dp in datapointvalues)
+{
+    Console.WriteLine($"{dp.FieldKey} = {dp.Value} (normalized: {dp.NormalizedValue})");
+
+    if (dp.Validation != null)
+    {
+        var v = dp.Validation;
+        Console.WriteLine($"  Validation: {v.Status} — {v.Summary}"); // e.g. "passed — 3/3 passed, 0 failed, 0 skipped"
+
+        foreach (var check in v.Results)
+        {
+            Console.WriteLine($"    {check.Type}: {(check.Passed ? "passed" : "failed")}");
+            // check.Message, check.Runtime and check.Metadata (raw JSON) are available for custom validators.
+        }
+    }
+}
+```
+
 ## Account
 
 This namespace is designed to facilitate crucial account-related activities and insights. It encompasses a range of functionalities essential for enhancing user interaction and management within the platform.

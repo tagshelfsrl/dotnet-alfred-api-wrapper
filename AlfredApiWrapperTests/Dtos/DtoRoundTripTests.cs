@@ -120,15 +120,40 @@ public class DtoRoundTripTests
           "id": "11111111-1111-1111-1111-111111111111",
           "file_log_id": "22222222-2222-2222-2222-222222222222",
           "metadata_id": "33333333-3333-3333-3333-333333333333",
-          "metadata_name": "total", "value": "100.00", "classification_score": 0.9
+          "metadata_name": "no_cedula", "field_key": "no_cedula", "value": "402-1912052-0",
+          "classification_score": 0.9, "normalized_value": "402-1912052-0",
+          "validation": {
+            "Status": "passed",
+            "ExecutedAt": "2026-08-11T17:20:22.9238048Z",
+            "DurationMs": 1843,
+            "Results": [
+              { "ValidatorId": "v_2yy94x", "Type": "required", "Passed": true, "Skipped": false,
+                "Severity": 1, "BlocksCompletion": false, "DurationMs": 0 },
+              { "ValidatorId": "v_6snzhu", "Type": "custom", "Passed": true, "Skipped": false,
+                "Severity": 1, "BlocksCompletion": false, "Message": "ok",
+                "Metadata": { "api_code": 200 }, "DurationMs": 1842, "Runtime": "python" }
+            ],
+            "Summary": { "Total": 2, "Passed": 2, "Failed": 0, "Skipped": 0, "HasBlockingFailures": false },
+            "MustPassValidation": true
+          }
         }
         """;
 
         var result = RoundTrip<DataPointResult>(json);
 
-        Assert.Equal("total", result.MetadataName);
-        Assert.Equal("100.00", result.Value);
+        Assert.Equal("no_cedula", result.FieldKey);
+        Assert.Equal("402-1912052-0", result.NormalizedValue);
         Assert.NotEqual(Guid.Empty, result.FileLogId);
+
+        var validation = result.Validation;
+        Assert.Equal("passed", validation.Status);
+        Assert.Equal(2, validation.Results.Count);
+        Assert.Equal(2, validation.Summary.Passed);
+        // Exercise the ToString overrides on the validation types.
+        _ = validation.ToString();
+        _ = validation.Summary.ToString();
+        _ = validation.Results[0].ToString();
+        _ = validation.Results[1].ToString();
     }
 
     [Fact]

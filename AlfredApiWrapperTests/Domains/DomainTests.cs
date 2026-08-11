@@ -218,10 +218,12 @@ public class DomainTests
     // ---- DataPoint ----
 
     [Fact]
-    public async Task DataPoint_GetValuesAsync_ReturnsList()
+    public async Task DataPoint_GetValuesAsync_ReturnsList_WithFieldKeyAndNormalizedValue()
     {
-        var handler = FakeHttpMessageHandler.Json(
-            """[ { "metadata_name": "total", "value": "100.00", "classification_score": 0.9 } ]""");
+        var handler = FakeHttpMessageHandler.Json("""
+        [ { "metadata_name": "total", "field_key": "total", "value": "100.00",
+            "classification_score": 0.9, "normalized_value": "100.00" } ]
+        """);
         var domain = new DataPointDomain(FakeHttpMessageHandler.Client(handler));
         var fileId = Guid.NewGuid();
 
@@ -229,8 +231,65 @@ public class DomainTests
 
         Assert.Single(result);
         Assert.Equal("total", result[0].MetadataName);
+        Assert.Equal("total", result[0].FieldKey);
         Assert.Equal("100.00", result[0].Value);
+        Assert.Equal("100.00", result[0].NormalizedValue);
+        // A value without validation leaves the property null.
+        Assert.Null(result[0].Validation);
         Assert.EndsWith($"api/values/file/{fileId}", handler.LastRequest!.RequestUri!.ToString());
+    }
+
+    [Fact]
+    public async Task DataPoint_GetValuesAsync_MapsValidationBlock()
+    {
+        // Shape mirrors the production payload (snake_case data point, PascalCase validation block).
+        var handler = FakeHttpMessageHandler.Json("""
+        [
+          {
+            "metadata_name": "NoCedula", "field_key": "no_cedula", "value": "402-1912052-0",
+            "classification_score": 0.01, "normalized_value": "402-1912052-0",
+            "validation": {
+              "Status": "passed",
+              "ExecutedAt": "2026-08-11T17:20:22.9238048Z",
+              "DurationMs": 1843,
+              "Results": [
+                { "ValidatorId": "v_2yy94x", "Type": "required", "Passed": true, "Skipped": false,
+                  "Severity": 1, "BlocksCompletion": false, "DurationMs": 0 },
+                { "ValidatorId": "v_6snzhu", "Type": "custom", "Passed": true, "Skipped": false,
+                  "Severity": 1, "BlocksCompletion": false,
+                  "Message": "Cedula validated successfully against padron API.",
+                  "Metadata": { "cedula_matches": true, "api_code": 200 },
+                  "DurationMs": 1842, "Runtime": "python" }
+              ],
+              "Summary": { "Total": 2, "Passed": 2, "Failed": 0, "Skipped": 0, "HasBlockingFailures": false },
+              "MustPassValidation": true
+            }
+          }
+        ]
+        """);
+        var domain = new DataPointDomain(FakeHttpMessageHandler.Client(handler));
+
+        var result = await domain.GetValuesAsync(Guid.NewGuid());
+        var validation = result[0].Validation;
+
+        Assert.NotNull(validation);
+        Assert.Equal("passed", validation.Status);
+        Assert.Equal(new DateTime(2026, 8, 11, 17, 20, 22, DateTimeKind.Utc), validation.ExecutedAt.ToUniversalTime(), TimeSpan.FromSeconds(1));
+        Assert.Equal(1843, validation.DurationMs);
+        Assert.True(validation.MustPassValidation);
+
+        Assert.Equal(2, validation.Results.Count);
+        var custom = validation.Results.Single(r => r.Type == "custom");
+        Assert.True(custom.Passed);
+        Assert.Equal("python", custom.Runtime);
+        Assert.Contains("padron", custom.Message);
+        Assert.NotNull(custom.Metadata);
+        Assert.True((bool)custom.Metadata["cedula_matches"]!);
+        Assert.Equal(200, (int)custom.Metadata["api_code"]!);
+
+        Assert.Equal(2, validation.Summary.Total);
+        Assert.Equal(2, validation.Summary.Passed);
+        Assert.False(validation.Summary.HasBlockingFailures);
     }
 
     // ---- Deferred Session ----
