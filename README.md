@@ -24,6 +24,10 @@ Alfred is a powerful document processing platform that enables you to extract, i
 
 - **Domain-Specific Operations**: Offers specialized support for File and Job operations, enabling developers to intuitively manage and interact with API resources.
 
+- **Real-Time Events**: Streams job and file events as they happen over Socket.IO through a standalone real-time client, removing the need for polling.
+
+- **Tag Management**: List, create, inspect, and update tags (document types), including their configured data points and visual-extraction setup.
+
 - **Cross-Platform Compatibility**: Designed to be fully compatible across .NET Core, .NET Standard, and .NET Framework 4.7.2, ensuring broad usability in diverse development environments.
 
 - **Minimal Dependencies**: Crafted to minimize external dependencies, facilitating an easier integration and deployment process with reduced conflict risk.
@@ -396,6 +400,27 @@ Guid fileid = Guid.Parse("010065f8-c515-465b-9bd4-13a1fd36e908");
 List<DataPointResult> datapointvalues = await alfred.DataPoint.GetValuesAsync(fileid);
 ```
 
+Each `DataPointResult` includes its `FieldKey` and, when the platform produced one, a `NormalizedValue`. When a data point was validated, its `Validation` property is populated (otherwise `null`); it reports the overall `Status`, a per-validator `Results` list, and a roll-up `Summary`.
+
+```csharp
+foreach (var dp in datapointvalues)
+{
+    Console.WriteLine($"{dp.FieldKey} = {dp.Value} (normalized: {dp.NormalizedValue})");
+
+    if (dp.Validation != null)
+    {
+        var v = dp.Validation;
+        Console.WriteLine($"  Validation: {v.Status} — {v.Summary}"); // e.g. "passed — 3/3 passed, 0 failed, 0 skipped"
+
+        foreach (var check in v.Results)
+        {
+            Console.WriteLine($"    {check.Type}: {(check.Passed ? "passed" : "failed")}");
+            // check.Message, check.Runtime and check.Metadata (raw JSON) are available for custom validators.
+        }
+    }
+}
+```
+
 ## Account
 
 This namespace is designed to facilitate crucial account-related activities and insights. It encompasses a range of functionalities essential for enhancing user interaction and management within the platform.
@@ -422,6 +447,200 @@ WebhookSetupRequest request = new WebhookSetupRequest
 
 // Set a Webhook for a Given Account
 WebhookSetupResult webhook = await alfred.Account.SetupWebhookAsync(request);
+```
+
+## Tags
+
+This namespace provides operations for managing tags (document types): listing them, creating new ones, retrieving details (including configured data points and visual-extraction setup), and updating them.
+
+### List Tags
+
+Listing is unpaged by default and returns the full array. You can filter by a case-insensitive substring (`query`) and optionally include disabled tags.
+
+```csharp
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using TagShelf.Alfred.ApiWrapper.Domains.Tag.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+
+// Authentication
+var alfred = await AlfredFactory.CreateWithApiKeyAsync("your-api-key", EnvironmentType.Production);
+
+// Retrieve every tag accessible to the caller (optionally filtered)
+List<TagResult> tags = await alfred.Tag.GetAllAsync(query: "invoice", includeDisabled: false);
+foreach (var tag in tags)
+{
+    Console.WriteLine($"{tag.Name} ({tag.Slug})");
+}
+```
+
+For large tenants, page the results instead. Paging returns an envelope with the page rows plus the total count:
+
+```csharp
+PagedResult<TagResult> page = await alfred.Tag.GetPagedAsync(page: 1, pageSize: 50, query: "invoice");
+Console.WriteLine($"Showing {page.Result.Count} of {page.Total} tag(s)");
+```
+
+### Create a Tag
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.Domains.Tag.Requests;
+using TagShelf.Alfred.ApiWrapper.Domains.Tag.Results;
+
+CreateTagResult created = await alfred.Tag.CreateAsync(new CreateTagRequest
+{
+    Name = "Invoice",
+    Description = "Vendor invoices" // optional, but tags without one classify poorly
+});
+
+Console.WriteLine($"Created tag {created.Id}");
+foreach (var warning in created.Warnings ?? Enumerable.Empty<string>())
+{
+    Console.WriteLine($"Warning: {warning}");
+}
+```
+
+### Retrieve Tag Details
+
+The detail endpoint is **slim by default**: identity fields plus each data point's `Id`, `Name`, and `FieldKey` (hidden data points excluded).
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.Domains.Tag.Results;
+
+TagDetailResult detail = await alfred.Tag.GetAsync(tagId);
+Console.WriteLine($"{detail.Name} — {detail.DataPoints.Count} data point(s)");
+
+foreach (var dataPoint in detail.DataPoints)
+{
+    Console.WriteLine($"  {dataPoint.FieldKey} ({dataPoint.Name})");
+}
+```
+
+Opt in to the full data point configuration and/or the tag's visual-extraction setup with `TagExpand` (a `[Flags]` enum). Expanded data points include configuration fields (`DataType`, `ValueSource`, `Required`, hidden ones, …); without the expansion those fields are left at their defaults.
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+
+TagDetailResult full = await alfred.Tag.GetAsync(tagId, TagExpand.DataPoints | TagExpand.VisualExtraction);
+// or: TagExpand.All
+
+foreach (var dataPoint in full.DataPoints)
+{
+    Console.WriteLine($"  {dataPoint.FieldKey}: {dataPoint.DataType} (source: {dataPoint.ValueSource})");
+}
+
+if (full.VisualExtraction != null)
+{
+    Console.WriteLine($"Visual extraction: {full.VisualExtraction}");
+}
+```
+
+### Update a Tag
+
+Updates are partial — only the fields you set are changed.
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.Domains.Tag.Requests;
+
+UpdateTagResult updated = await alfred.Tag.UpdateAsync(tagId, new UpdateTagRequest
+{
+    Description = "Updated description",
+    Disabled = false
+});
+```
+
+## Real-Time Events
+
+The `AlfredRealTimeClient` is a standalone client that streams events from Alfred in real time over [Socket.IO](https://socket.io/). It authenticates with an API key and lets you react to job and file activity as it happens — no polling required.
+
+The server forwards every event on one of two aggregate channels — `job_event` and `file_event`. The specific event type is carried in the payload's inner `event_name` field (for example `alfred_event_job_start`), exposed as `RealTimeEvent.EventName`.
+
+### Connect and Listen to All Job and File Events
+
+```csharp
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+using TagShelf.Alfred.ApiWrapper.RealTime;
+
+// Create a real-time client (no I/O happens yet)
+var realtime = AlfredFactory.CreateRealTimeClient("your-api-key", EnvironmentType.Production);
+
+// Optional: observe the connection life-cycle
+realtime.Connected    += (s, e)      => Console.WriteLine("Connected!");
+realtime.Disconnected += (s, reason) => Console.WriteLine($"Disconnected: {reason}");
+realtime.Error        += (s, error)  => Console.WriteLine($"Error: {error}");
+
+// Register handlers for every job and file event
+realtime.OnJobEvent(evt =>
+    Console.WriteLine($"Job event: {evt.EventName} (job {evt.JobId})"));
+
+realtime.OnFileEvent(evt =>
+    Console.WriteLine($"File event: {evt.EventName}"));
+
+// Establish the connection (throws TimeoutException if it cannot connect in time)
+await realtime.ConnectAsync();
+
+// ... keep your application alive to receive events ...
+
+await realtime.DisconnectAsync();
+realtime.Dispose();
+```
+
+### Listen to a Specific Event Type
+
+Register a handler that fires only when the inner `event_name` matches. Well-known values are provided as constants in `JobEventNames` and `FileEventNames`.
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.RealTime;
+
+// Only fire when a job starts
+realtime.On(RealTimeChannels.JobEvent, JobEventNames.JobStart, evt =>
+    Console.WriteLine($"Job {evt.JobId} started"));
+
+// Only fire when a file finishes processing
+realtime.On(RealTimeChannels.FileEvent, FileEventNames.FileDone, evt =>
+    Console.WriteLine($"File finished: {evt.Payload["file_name"]}"));
+```
+
+### Accessing the Payload
+
+Each `RealTimeEvent` exposes the common discriminator fields (`EventName`, `CompanyId`, `JobId`), the full raw payload as a Newtonsoft `JObject` (`Payload`), and a `GetData<T>()` helper to deserialize into your own model. Decorate the model with `[JsonProperty("snake_case")]` attributes to map fields.
+
+```csharp
+using Newtonsoft.Json;
+using TagShelf.Alfred.ApiWrapper.RealTime;
+
+public class FileStatusPayload
+{
+    [JsonProperty("event_name")]        public string EventName { get; set; }
+    [JsonProperty("file_status")]       public string FileStatus { get; set; }
+    [JsonProperty("classification_score")] public double ClassificationScore { get; set; }
+}
+
+realtime.OnFileEvent(evt =>
+{
+    var data = evt.GetData<FileStatusPayload>();
+    Console.WriteLine($"{data.FileStatus} ({data.ClassificationScore:P0})");
+});
+```
+
+### Configuration
+
+Pass a `RealTimeOptions` instance to tune the client. All values are optional:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `RealTimeUrl` | environment default | Overrides the server URL (useful for testing). |
+| `Reconnection` | `true` | Automatically reconnect when the connection drops. |
+| `ReconnectionAttempts` | `int.MaxValue` | Maximum number of reconnection attempts. |
+| `ReconnectionDelay` | `1000` | Delay between reconnection attempts, in milliseconds. |
+| `ConnectionTimeout` | `20000` | Handshake timeout for `ConnectAsync`, in milliseconds. |
+| `Verbose` | `false` | Emit diagnostic messages to the console. |
+
+```csharp
+var options = new RealTimeOptions { Verbose = true, ConnectionTimeout = 10000 };
+var realtime = AlfredFactory.CreateRealTimeClient("your-api-key", EnvironmentType.Production, options);
 ```
 
 # Notes

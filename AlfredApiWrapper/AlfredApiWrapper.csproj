@@ -5,7 +5,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <PackageId>TagShelf.Alfred.ApiWrapper</PackageId>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <Authors>Raúl Roa (raul@tagshelf.com)</Authors>
     <Company>Tagshelf</Company>
     <Description>A comprehensive .NET library designed to facilitate seamless interactions with the Alfred API.</Description>
@@ -14,13 +14,20 @@
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Introducing AccountDomain with webhook setup support. See https://github.com/tagshelfsrl/dotnet-alfred-api-wrapper/releases for more details.</PackageReleaseNotes>
+    <PackageReleaseNotes>Introducing real-time events via AlfredRealTimeClient (Socket.IO). See https://github.com/tagshelfsrl/dotnet-alfred-api-wrapper/releases for more details.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\README.md" Pack="true" PackagePath="\"/>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="SocketIOClient" Version="3.1.2" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>AlfredApiWrapperTests</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
 </Project>

@@ -18,9 +18,18 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         /// <summary>
         /// Initializes a new instance of the HttpApiClient class.
         /// </summary>
-        public HttpApiClient()
+        public HttpApiClient() : this(new HttpClientHandler())
         {
-            _httpClient = new HttpClient();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the HttpApiClient class using the supplied message handler.
+        /// Intended for testing, where a fake handler supplies canned responses in place of the network.
+        /// </summary>
+        /// <param name="handler">The message handler that processes outgoing requests.</param>
+        internal HttpApiClient(HttpMessageHandler handler)
+        {
+            _httpClient = new HttpClient(handler);
             _clientIdentifier = Guid.NewGuid().ToString(); // Unique identifier for this client instance
             _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"dotnet-alfred-api-wrapper/{_clientIdentifier}");
         }
@@ -33,6 +42,22 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         {
             _httpClient.BaseAddress = new Uri(baseAddress);
             // _httpClient.DefaultRequestHeaders.Add("Content-Type", "application/json");
+        }
+
+        /// <summary>
+        /// Gets the configured base address, or <c>null</c> if none has been set. For testing.
+        /// </summary>
+        internal Uri BaseAddress => _httpClient.BaseAddress;
+
+        /// <summary>
+        /// Returns the value(s) of a default request header, or <c>null</c> when absent. For testing.
+        /// </summary>
+        /// <param name="name">The header name.</param>
+        internal string GetDefaultHeaderValue(string name)
+        {
+            return _httpClient.DefaultRequestHeaders.TryGetValues(name, out var values)
+                ? string.Join(",", values)
+                : null;
         }
 
         /// <summary>
@@ -62,6 +87,25 @@ namespace TagShelf.Alfred.ApiWrapper.Core
             var request = new HttpRequestMessage(HttpMethod.Post, uri)
             {
                 // Use an empty StringContent with application/json type if no content is provided.
+                Content = content ?? new StringContent(string.Empty, Encoding.UTF8, "application/json")
+            };
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            return SendAsync<TResult>(request);
+        }
+
+        /// <summary>
+        /// Sends a PATCH request to the specified Uri as an asynchronous operation and deserializes the JSON response.
+        /// This method ensures that an empty content request is still sent with a Content-Type of application/json.
+        /// </summary>
+        /// <typeparam name="TResult">The type of the deserialized result.</typeparam>
+        /// <param name="uri">The Uri the request is sent to.</param>
+        /// <param name="content">The HTTP request content sent to the server, or null if no content is being sent.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the deserialized response.</returns>
+        public Task<TResult> PatchAsync<TResult>(string uri, HttpContent content = null)
+        {
+            // HttpMethod.Patch is unavailable on net472/netstandard2.0, so construct it explicitly.
+            var request = new HttpRequestMessage(new HttpMethod("PATCH"), uri)
+            {
                 Content = content ?? new StringContent(string.Empty, Encoding.UTF8, "application/json")
             };
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
