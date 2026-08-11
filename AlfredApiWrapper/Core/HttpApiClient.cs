@@ -94,6 +94,25 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         }
 
         /// <summary>
+        /// Sends a PATCH request to the specified Uri as an asynchronous operation and deserializes the JSON response.
+        /// This method ensures that an empty content request is still sent with a Content-Type of application/json.
+        /// </summary>
+        /// <typeparam name="TResult">The type of the deserialized result.</typeparam>
+        /// <param name="uri">The Uri the request is sent to.</param>
+        /// <param name="content">The HTTP request content sent to the server, or null if no content is being sent.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the deserialized response.</returns>
+        public Task<TResult> PatchAsync<TResult>(string uri, HttpContent content = null)
+        {
+            // HttpMethod.Patch is unavailable on net472/netstandard2.0, so construct it explicitly.
+            var request = new HttpRequestMessage(new HttpMethod("PATCH"), uri)
+            {
+                Content = content ?? new StringContent(string.Empty, Encoding.UTF8, "application/json")
+            };
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            return SendAsync<TResult>(request);
+        }
+
+        /// <summary>
         /// Helper method to easily create and send a GET request.
         /// </summary>
         /// <typeparam name="TResult">The expected type of the response object.</typeparam>

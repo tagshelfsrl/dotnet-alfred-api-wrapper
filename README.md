@@ -26,6 +26,8 @@ Alfred is a powerful document processing platform that enables you to extract, i
 
 - **Real-Time Events**: Streams job and file events as they happen over Socket.IO through a standalone real-time client, removing the need for polling.
 
+- **Tag Management**: List, create, inspect, and update tags (document types), including their configured data points and visual-extraction setup.
+
 - **Cross-Platform Compatibility**: Designed to be fully compatible across .NET Core, .NET Standard, and .NET Framework 4.7.2, ensuring broad usability in diverse development environments.
 
 - **Minimal Dependencies**: Crafted to minimize external dependencies, facilitating an easier integration and deployment process with reduced conflict risk.
@@ -424,6 +426,106 @@ WebhookSetupRequest request = new WebhookSetupRequest
 
 // Set a Webhook for a Given Account
 WebhookSetupResult webhook = await alfred.Account.SetupWebhookAsync(request);
+```
+
+## Tags
+
+This namespace provides operations for managing tags (document types): listing them, creating new ones, retrieving details (including configured data points and visual-extraction setup), and updating them.
+
+### List Tags
+
+Listing is unpaged by default and returns the full array. You can filter by a case-insensitive substring (`query`) and optionally include disabled tags.
+
+```csharp
+// Imports
+using TagShelf.Alfred.ApiWrapper.Core;
+using TagShelf.Alfred.ApiWrapper.Domains.Tag.Results;
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+
+// Authentication
+var alfred = await AlfredFactory.CreateWithApiKeyAsync("your-api-key", EnvironmentType.Production);
+
+// Retrieve every tag accessible to the caller (optionally filtered)
+List<TagResult> tags = await alfred.Tag.GetAllAsync(query: "invoice", includeDisabled: false);
+foreach (var tag in tags)
+{
+    Console.WriteLine($"{tag.Name} ({tag.Slug})");
+}
+```
+
+For large tenants, page the results instead. Paging returns an envelope with the page rows plus the total count:
+
+```csharp
+PagedResult<TagResult> page = await alfred.Tag.GetPagedAsync(page: 1, pageSize: 50, query: "invoice");
+Console.WriteLine($"Showing {page.Result.Count} of {page.Total} tag(s)");
+```
+
+### Create a Tag
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.Domains.Tag.Requests;
+using TagShelf.Alfred.ApiWrapper.Domains.Tag.Results;
+
+CreateTagResult created = await alfred.Tag.CreateAsync(new CreateTagRequest
+{
+    Name = "Invoice",
+    Description = "Vendor invoices" // optional, but tags without one classify poorly
+});
+
+Console.WriteLine($"Created tag {created.Id}");
+foreach (var warning in created.Warnings ?? Enumerable.Empty<string>())
+{
+    Console.WriteLine($"Warning: {warning}");
+}
+```
+
+### Retrieve Tag Details
+
+The detail endpoint is **slim by default**: identity fields plus each data point's `Id`, `Name`, and `FieldKey` (hidden data points excluded).
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.Domains.Tag.Results;
+
+TagDetailResult detail = await alfred.Tag.GetAsync(tagId);
+Console.WriteLine($"{detail.Name} — {detail.DataPoints.Count} data point(s)");
+
+foreach (var dataPoint in detail.DataPoints)
+{
+    Console.WriteLine($"  {dataPoint.FieldKey} ({dataPoint.Name})");
+}
+```
+
+Opt in to the full data point configuration and/or the tag's visual-extraction setup with `TagExpand` (a `[Flags]` enum). Expanded data points include configuration fields (`DataType`, `ValueSource`, `Required`, hidden ones, …); without the expansion those fields are left at their defaults.
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.Enumerations;
+
+TagDetailResult full = await alfred.Tag.GetAsync(tagId, TagExpand.DataPoints | TagExpand.VisualExtraction);
+// or: TagExpand.All
+
+foreach (var dataPoint in full.DataPoints)
+{
+    Console.WriteLine($"  {dataPoint.FieldKey}: {dataPoint.DataType} (source: {dataPoint.ValueSource})");
+}
+
+if (full.VisualExtraction != null)
+{
+    Console.WriteLine($"Visual extraction: {full.VisualExtraction}");
+}
+```
+
+### Update a Tag
+
+Updates are partial — only the fields you set are changed.
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.Domains.Tag.Requests;
+
+UpdateTagResult updated = await alfred.Tag.UpdateAsync(tagId, new UpdateTagRequest
+{
+    Description = "Updated description",
+    Disabled = false
+});
 ```
 
 ## Real-Time Events

@@ -43,6 +43,32 @@ public class HttpApiClientTests
     }
 
     [Fact]
+    public async Task PatchAsync_SendsPatchMethodAndBody()
+    {
+        var handler = FakeHttpMessageHandler.Json("""{ "value": "patched" }""");
+        var client = FakeHttpMessageHandler.Client(handler);
+        var content = new StringContent("""{ "description": "x" }""", Encoding.UTF8, "application/json");
+
+        var result = await client.PatchAsync<Sample>("api/thing/1", content);
+
+        Assert.Equal("patched", result.Value);
+        Assert.Equal("PATCH", handler.LastRequest!.Method.Method);
+        Assert.Contains("description", handler.LastRequestBody);
+    }
+
+    [Fact]
+    public async Task PatchAsync_WithoutContent_StillSendsJsonBody()
+    {
+        var handler = FakeHttpMessageHandler.Json("""{ "value": "ok" }""");
+        var client = FakeHttpMessageHandler.Client(handler);
+
+        var result = await client.PatchAsync<Sample>("api/empty");
+
+        Assert.Equal("ok", result.Value);
+        Assert.Equal("application/json", handler.LastRequest!.Content!.Headers.ContentType!.MediaType);
+    }
+
+    [Fact]
     public async Task PostAsync_WithoutContent_StillSendsJsonBody()
     {
         var handler = FakeHttpMessageHandler.Json("""{ "value": "ok" }""");
