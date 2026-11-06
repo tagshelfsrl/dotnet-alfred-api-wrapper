@@ -116,33 +116,11 @@ namespace TagShelf.Alfred.ApiWrapper.Domains.Tag
             return parts.Count == 0 ? null : string.Join(",", parts);
         }
 
-        private static KeyValuePair<string, string> Param(string name, string value)
-        {
-            return new KeyValuePair<string, string>(name, value);
-        }
+        private static KeyValuePair<string, string> Param(string name, string value) => QueryString.Param(name, value);
 
-        // A boolean flag is only carried when true; false is the server default, so it is omitted.
-        private static KeyValuePair<string, string> Flag(string name, bool value)
-        {
-            return new KeyValuePair<string, string>(name, value ? "true" : null);
-        }
+        private static KeyValuePair<string, string> Flag(string name, bool value) => QueryString.Flag(name, value);
 
-        /// <summary>
-        /// Builds a query string ("?a=b&amp;c=d") from the supplied parameters, skipping any with a
-        /// null/empty value and URL-encoding the rest. Returns an empty string when nothing is set.
-        /// </summary>
-        internal static string BuildQueryString(params KeyValuePair<string, string>[] parameters)
-        {
-            var parts = new List<string>();
-            foreach (var parameter in parameters)
-            {
-                if (string.IsNullOrEmpty(parameter.Value))
-                {
-                    continue;
-                }
-                parts.Add(Uri.EscapeDataString(parameter.Key) + "=" + Uri.EscapeDataString(parameter.Value));
-            }
-            return parts.Count == 0 ? string.Empty : "?" + string.Join("&", parts);
-        }
+        /// <summary>Builds a query string from the supplied parameters. See <see cref="QueryString.Build"/>.</summary>
+        internal static string BuildQueryString(params KeyValuePair<string, string>[] parameters) => QueryString.Build(parameters);
     }
 }

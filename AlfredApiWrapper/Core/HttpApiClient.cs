@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace TagShelf.Alfred.ApiWrapper.Core
 {
@@ -58,6 +59,29 @@ namespace TagShelf.Alfred.ApiWrapper.Core
             return _httpClient.DefaultRequestHeaders.TryGetValues(name, out var values)
                 ? string.Join(",", values)
                 : null;
+        }
+
+        /// <summary>
+        /// Signs each outgoing request just before it is sent (used by HMAC authentication, where every request
+        /// carries its own signature). The request's URI is already absolute when the signer runs.
+        /// </summary>
+        internal Func<HttpRequestMessage, Task> RequestSigner { get; set; }
+
+        /// <summary>
+        /// Resolves the request's URI against the base address, as HttpClient would, then applies the
+        /// <see cref="RequestSigner"/> when one is set.
+        /// </summary>
+        private async Task PrepareAsync(HttpRequestMessage request)
+        {
+            if (RequestSigner == null)
+            {
+                return;
+            }
+            if (!request.RequestUri.IsAbsoluteUri && _httpClient.BaseAddress != null)
+            {
+                request.RequestUri = new Uri(_httpClient.BaseAddress, request.RequestUri);
+            }
+            await RequestSigner(request).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -126,6 +150,20 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         }
 
         /// <summary>
+        /// Sends a DELETE request to the specified Uri as an asynchronous operation and deserializes the JSON response.
+        /// An empty response body yields the default value of <typeparamref name="TResult"/>.
+        /// </summary>
+        /// <typeparam name="TResult">The type of the deserialized result.</typeparam>
+        /// <param name="uri">The Uri the request is sent to.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the deserialized response.</returns>
+        public Task<TResult> DeleteAsync<TResult>(string uri)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Delete, uri);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            return SendAsync<TResult>(request);
+        }
+
+        /// <summary>
         /// Fetches the response for a file download request without deserializing the content, allowing direct access to the byte stream.
         /// </summary>
         /// <param name="uri">The URI the request is sent to.</param>
@@ -134,6 +172,7 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         {
             var request = new HttpRequestMessage(HttpMethod.Get, uri);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*")); // Accept any content type
+            await PrepareAsync(request).ConfigureAwait(false);
             var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
             return response;
@@ -153,6 +192,7 @@ namespace TagShelf.Alfred.ApiWrapper.Core
             HttpResponseMessage response = null;
             try
             {
+                await PrepareAsync(request).ConfigureAwait(false);
                 response = await _httpClient.SendAsync(request).ConfigureAwait(false);
 
                 if (response.IsSuccessStatusCode)
@@ -163,7 +203,7 @@ namespace TagShelf.Alfred.ApiWrapper.Core
                 else
                 {
                     var errorJson = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    var errorResult = JsonConvert.DeserializeObject<ErrorResult>(errorJson);
+                    var errorResult = ParseError(errorJson);
                     throw new ApiException(errorResult.Error, errorResult.Message, response.StatusCode, errorJson);
                 }
             }
@@ -175,6 +215,41 @@ namespace TagShelf.Alfred.ApiWrapper.Core
             {
                 response?.Dispose();
             }
+        }
+
+        /// <summary>
+        /// Reads an error response body. The API answers errors in several shapes: an object with
+        /// <c>error</c>/<c>message</c>, a bare JSON string (for example a 409 from reprocess), or no body
+        /// at all (for example most 404s). Every shape yields a result rather than an exception, so the
+        /// caller always receives an <see cref="ApiException"/> carrying the status code.
+        /// </summary>
+        /// <param name="body">The raw response body.</param>
+        /// <returns>The parsed error; fields are null when the body does not carry them.</returns>
+        internal static ErrorResult ParseError(string body)
+        {
+            if (string.IsNullOrWhiteSpace(body))
+            {
+                return new ErrorResult();
+            }
+
+            try
+            {
+                var token = JToken.Parse(body);
+                if (token.Type == JTokenType.Object)
+                {
+                    return token.ToObject<ErrorResult>() ?? new ErrorResult();
+                }
+                if (token.Type == JTokenType.String)
+                {
+                    return new ErrorResult { Message = token.Value<string>() };
+                }
+            }
+            catch (JsonException)
+            {
+                // Not JSON (for example an HTML error page): fall through and keep the raw text.
+            }
+
+            return new ErrorResult { Message = body };
         }
     }
 }
