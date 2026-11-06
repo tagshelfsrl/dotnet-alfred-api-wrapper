@@ -26,7 +26,7 @@ public class AlfredFactoryTests
     [Fact]
     public async Task CreateWithHmacAsync_ReturnsInitializedClient()
     {
-        var alfred = await AlfredFactory.CreateWithHmacAsync("secret", "key", EnvironmentType.Production);
+        var alfred = await AlfredFactory.CreateWithHmacAsync("secret", Convert.ToBase64String(new byte[] { 1, 2, 3 }), EnvironmentType.Production);
 
         Assert.Equal("https://app.tagshelf.com/", alfred.ApiClient.BaseAddress!.ToString());
         AssertDomainsInitialized(alfred);

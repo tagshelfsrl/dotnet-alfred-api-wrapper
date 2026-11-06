@@ -98,7 +98,8 @@ public class DtoTests
         var request = new CreateJobRequest();
 
         Assert.Equal("library", request.Channel);
-        Assert.Equal(JobPriority.Normal, request.JobPriority);
+        // Null leaves the priority to the tenant's configured default.
+        Assert.Null(request.JobPriority);
     }
 
     [Fact]
@@ -118,7 +119,8 @@ public class DtoTests
         };
 
         Assert.False(request.Merge);
-        Assert.Equal(JobPriority.Normal, request.JobPriority);
+        Assert.Null(request.JobPriority);
+        Assert.Null(request.Decompose);
         Assert.Equal("web", request.Source);
         Assert.True(request.PropagateMetadata);
     }
@@ -146,6 +148,7 @@ public class DtoTests
     [InlineData(JobPriority.Low)]
     [InlineData(JobPriority.Normal)]
     [InlineData(JobPriority.High)]
+    [InlineData(JobPriority.Urgent)]
     public void JobPriority_AllValuesAreDefined(JobPriority priority)
     {
         Assert.True(Enum.IsDefined(typeof(JobPriority), priority));

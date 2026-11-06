@@ -79,11 +79,13 @@ var alfred = await AlfredFactory.CreateWithOAuthAsync("username", "password", En
 | **Benefits**       | Secure request authentication with a unique signature per request.|
 | **Best Practices** | Secure key management, include timestamps to prevent replay attacks, and use a dynamic nonce for each request.|
 
-To initialize the client for HMAC authentication, provide the secret key and public key:
+To initialize the client for HMAC authentication, provide your secret key and API key:
 
 ```csharp
-var alfred = await AlfredFactory.CreateWithHmacAsync("secret_key", "public_key", EnvironmentType.Production);
+var alfred = await AlfredFactory.CreateWithHmacAsync("secret_key", "api_key", EnvironmentType.Production);
 ```
+
+Every request is signed on its own (the `Authorization: amx ...` header), with a fresh nonce and the current time. Alfred rejects a signature more than five minutes old, so keep the machine's clock in sync.
 
 |API Key||
 |--|--|
@@ -99,13 +101,19 @@ var alfred = await AlfredFactory.CreateWithApiKeyAsync("api_key", EnvironmentTyp
 
 # Getting Started
 
-This library covers 6 different domains: 
+This library covers these domains:
 - [Tagshelf](#tagshelf)
 - [Deferred Sessions](#deferred-sessions)
 - [Files](#files)
 - [Jobs](#jobs)
 - [Data Points](#data-points)
 - [Account](#account)
+- [Tags](#tags)
+- [Search](#search)
+- [Remote Sources](#remote-sources)
+- [Real-Time Events](#real-time-events)
+
+When a call fails, the library throws an `ApiException` carrying the HTTP `StatusCode`, the server's `ErrorMessage` (when it sent one) and the raw `ResponseContent`. See [Handling Errors](#handling-errors).
 
 ## Tagshelf
 
@@ -238,6 +246,17 @@ UploadRequest uploadRequest = new UploadRequest
 FileUploadResult uploadResult = await alfred.File.UploadAsync(uploadRequest);
 ```
 
+Useful options on `UploadRequest` (the same apply to `CreateJobRequest`):
+
+| Property | Description |
+| --- | --- |
+| `CorrelationId` | Your own ID for the operation that submitted the job (an ERP transaction, an email Message-ID), up to 512 characters. It is returned on the job and can be searched with `Job.GetAllAsync`. Alfred does not deduplicate on it. |
+| `JobPriority` | `Low`, `Normal`, `High` or `Urgent`. Leave it unset to use your account's default priority. |
+| `Decompose` | Split each input into separate units of work (for example each page of a PDF). `ParentFilePrefix` and `PageRotation` only apply when this is `true`. |
+| `Channel` | The channel the job is recorded under (for example `"api"`). |
+
+`FileUploadResult` returns the `JobId`, the `CorrelationId`, and any `Warnings` about the submission (for example that your account has no enabled tags). The job is still created when there are warnings.
+
 ### Upload File by Stream
 
 Uploads a single remote file to the system's pipeline. Before using this endpoint, you must have the `id` of a deferred session already created.
@@ -317,6 +336,59 @@ Guid fileid = Guid.Parse("6783e660-2e97-4534-b559-5c90b4d30d41");
 FileDownloadResult download = await alfred.File.DownloadAsync(fileid);
 ```
 
+### List Files
+
+Lists your account's files one page at a time (at most 200 per page).
+
+```csharp
+PagedResult<FileDetailResult> page = await alfred.File.GetAllAsync(page: 1, pageSize: 50);
+Console.WriteLine($"{page.Total} files");
+```
+
+### Get File Events and Versions
+
+`GetEventsAsync` lists the events Alfred raised for a file (for example `alfred_event_file_done`) and whether each reached the event broker and your webhook. `GetVersionsAsync` lists the versions of the file's extracted text.
+
+```csharp
+List<FileEventResult> events = await alfred.File.GetEventsAsync(fileId);
+List<FileVersionResult> versions = await alfred.File.GetVersionsAsync(fileId);
+```
+
+### Share a File
+
+Creates a link anyone can use to download the file without credentials. The file must have finished processing. Set how long the link works (at least 60 seconds), or make it permanent.
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.Domains.File.Requests;
+
+ShareFileResult share = await alfred.File.ShareAsync(fileId, new ShareFileRequest
+{
+    ExpiresInSeconds = 24 * 60 * 60, // or DoesNotExpire = true
+    ShortUrl = true,                 // the default
+    AlwaysUseLastVersion = true      // the default; false pins the current version
+});
+Console.WriteLine(share.ShareUrl);
+```
+
+### Reprocess or Re-extract a File
+
+Start with the lightest fix. `ReextractAsync` runs extraction again with the file's current tag, for when the extracted data is wrong or the tag's data points changed; the file must already be classified. `ReprocessAsync` runs the whole pipeline again (transformation, classification and extraction), for when the file got the wrong tag or its transformation failed.
+
+```csharp
+FileOperationResult reextract = await alfred.File.ReextractAsync(fileId, requestReview: true);
+FileOperationResult reprocess = await alfred.File.ReprocessAsync(fileId, skipCache: true);
+```
+
+`requestReview: true` holds the result for human review whatever the tag's validation settings say. A file that a run in progress already holds is refused with an `ApiException` with status 409.
+
+### Change a File's Tag
+
+Gives a file a different tag (document type) and sends it to extraction under the new one, as **Change type** does in the console. A file someone else is reviewing is refused with status 409. Requires Alfred 1.128.4 or later.
+
+```csharp
+ChangeFileTagResult changed = await alfred.File.ChangeTagAsync(fileId, newTagId);
+```
+
 ## Jobs
 
 A Job in Alfred represents a single unit of work that performs a sequence of operations on one or more files for the purpose of document classification, extraction, and indexing. It is an asynchronous entity, orchestrated by a state machine that manages its progress through various stages.
@@ -352,6 +424,8 @@ CreateJobRequest request = new CreateJobRequest
 CreateJobResult job = await alfred.Job.CreateAsync(request);
 ```
 
+`CreateJobRequest` also accepts `CorrelationId` and `JobPriority`; see the options table under [Upload Files from Remote Sources](#upload-files-from-remote-sources). `CreateJobResult` returns the `JobId` and the `CorrelationId`.
+
 ### Retrieve Detailed Information About a Specific Job
 
 This endpoint provides comprehensive details about a Job identified by its unique `id`. 
@@ -370,6 +444,62 @@ Guid jobid = Guid.Parse("ffad4bcb-0d38-47a6-9886-22e98818ee84");
 
 // Get Job Details
 JobDetailResult jobdetail = await alfred.Job.GetAsync(jobid);
+```
+
+For a large job, leave out the sections you don't need:
+
+```csharp
+JobDetailResult slim = await alfred.Job.GetAsync(jobid, JobDetailExclude.Files | JobDetailExclude.Metadata);
+```
+
+### List Jobs
+
+Lists your account's jobs, newest first, 10 to 100 per page. You can filter by a date window (UTC days), by the correlation ID the job was submitted with (an exact, case-sensitive match), and by channel.
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.Domains.Job.Requests;
+
+PagedResult<JobSummaryResult> jobs = await alfred.Job.GetAllAsync(new JobListRequest
+{
+    PageSize = 25,
+    StartDate = new DateTime(2026, 10, 1),
+    EndDate = new DateTime(2026, 10, 31),
+    CorrelationId = "erp:invoice:INV-1042"
+});
+```
+
+### Restart, Cancel or Check a Job
+
+```csharp
+JobRestartResult restarted = await alfred.Job.RestartAsync(jobid);
+JobCancelResult canceled = await alfred.Job.CancelAsync(jobid);
+
+// Before restarting with fresh downloads, check the remote inputs are still there.
+JobSourcesCheckResult sources = await alfred.Job.CheckSourcesAsync(jobid);
+if (sources.Available)
+{
+    await alfred.Job.RestartAsync(jobid, redownloadRemoteFiles: true);
+}
+```
+
+A restart with `redownloadRemoteFiles: true` is refused with status 409 when a source has gone missing; the `ApiException`'s `ResponseContent` lists them.
+
+### Reprocess or Re-extract Several Files of a Job
+
+Runs one operation on a chosen set of a job's files. Each file is checked on its own: files that are not in the job, or not eligible, are skipped and reported instead of failing the whole call.
+
+```csharp
+BulkFileOperationResult bulk = await alfred.Job.BulkFileOperationAsync(jobid, new BulkFileOperationRequest
+{
+    FileIds = { fileId1, fileId2 },
+    Operation = FileOperation.Reextract,
+    RequestReview = false
+});
+
+foreach (var r in bulk.Results)
+{
+    Console.WriteLine($"{r.Id}: {r.Outcome} {r.Reason}"); // Outcome is "done", "skipped" or "failed"
+}
 ```
 
 ## Data Points
@@ -400,7 +530,7 @@ Guid fileid = Guid.Parse("010065f8-c515-465b-9bd4-13a1fd36e908");
 List<DataPointResult> datapointvalues = await alfred.DataPoint.GetValuesAsync(fileid);
 ```
 
-Each `DataPointResult` includes its `FieldKey` and, when the platform produced one, a `NormalizedValue`. When a data point was validated, its `Validation` property is populated (otherwise `null`); it reports the overall `Status`, a per-validator `Results` list, and a roll-up `Summary`.
+Each `DataPointResult` includes its `FieldKey`, the `ExtractedValue` when formatting rules changed the extractor's original output, and, when the platform produced one, a `NormalizedValue`. When a data point was validated, its `Validation` property is populated (otherwise `null`); it reports the overall `Status`, a per-validator `Results` list, and a roll-up `Summary`.
 
 ```csharp
 foreach (var dp in datapointvalues)
@@ -419,6 +549,27 @@ foreach (var dp in datapointvalues)
         }
     }
 }
+```
+
+### Get Data Point Values for a Tag
+
+Returns the confirmed values of every file of a tag, one flat row per file. Each row has fixed keys (`file_id`, `tag_name`, `blob_url`, `creation_date` and others) plus one key per data point: its name in snake_case (`InvoiceNumber` becomes `invoice_number`). The response is not paged, so it can be large for a busy tag.
+
+```csharp
+List<Dictionary<string, JToken>> rows = await alfred.DataPoint.GetValuesByTagAsync(tagId);
+foreach (var row in rows)
+{
+    Console.WriteLine($"{row["file_id"]}: {row["invoice_number"]}");
+}
+```
+
+### Get Data Point Definitions
+
+Lists what Alfred extracts for a tag: each data point's name, stable `FieldKey`, `FieldType`, whether it holds personal information (`IsPii`, `PiiMask`), and its formatting and validation rules (as raw JSON). Data points are configured in Alfred; the API reads them.
+
+```csharp
+List<DataPointDefinitionResult> definitions = await alfred.DataPoint.GetDefinitionsAsync(tagId);
+DataPointDefinitionResult one = await alfred.DataPoint.GetDefinitionAsync(definitions[0].Id);
 ```
 
 ## Account
@@ -447,6 +598,15 @@ WebhookSetupRequest request = new WebhookSetupRequest
 
 // Set a Webhook for a Given Account
 WebhookSetupResult webhook = await alfred.Account.SetupWebhookAsync(request);
+```
+
+### List Accounts and Their Tags
+
+`GetCompaniesAsync` lists the accounts you have access to. An API key belongs to one account; a user signed in with OAuth or HMAC may have several. `GetTagsAsync` lists the tags you can see in an account (your own when you pass no ID).
+
+```csharp
+List<CompanyResult> companies = await alfred.Account.GetCompaniesAsync();
+List<TagResult> tags = await alfred.Account.GetTagsAsync(companies[0].Id);
 ```
 
 ## Tags
@@ -549,6 +709,46 @@ UpdateTagResult updated = await alfred.Tag.UpdateAsync(tagId, new UpdateTagReque
 });
 ```
 
+## Search
+
+Searches document content within the tags you can see. `BasicAsync` can be narrowed to one tag (by ID or name); `UniversalAsync` searches everything you can see. Each result carries the file's tag and its extracted data points, with each value in its typed JSON form and as text.
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.Domains.Search.Requests;
+using TagShelf.Alfred.ApiWrapper.Domains.Search.Results;
+
+PagedResult<SearchResult> hits = await alfred.Search.BasicAsync(new SearchRequest
+{
+    Query = "RMP002-26",
+    TagName = "Invoice",
+    Fuzzy = true
+});
+
+PagedResult<SearchResult> everywhere = await alfred.Search.UniversalAsync("RMP002-26", page: 1, pageSize: 50);
+```
+
+## Remote Sources
+
+A remote source is a cloud storage location (Amazon S3, DigitalOcean Spaces or Azure Blob Storage) that Alfred can read files from. Once created, refer to it by name in an upload with `UploadRequest.Source`, `Container` and `FileName`/`FileNames`. The credentials are kept in your account's secret vault and are never returned.
+
+```csharp
+using TagShelf.Alfred.ApiWrapper.Domains.RemoteSource.Requests;
+
+CreateRemoteSourceResult created = await alfred.RemoteSource.CreateAsync(new CreateRemoteSourceRequest
+{
+    SourceName = "invoices-bucket",
+    Type = RemoteSourceType.Aws,
+    AccessKey = "AKIA...",
+    SecretKey = "...",
+    AccountName = "my-bucket",
+    Region = "us-east-1"
+});
+
+List<RemoteSourceResult> sources = await alfred.RemoteSource.GetAllAsync();
+
+await alfred.RemoteSource.RemoveAsync("invoices-bucket"); // by name
+```
+
 ## Real-Time Events
 
 The `AlfredRealTimeClient` is a standalone client that streams events from Alfred in real time over [Socket.IO](https://socket.io/). It authenticates with an API key and lets you react to job and file activity as it happens — no polling required.
@@ -641,6 +841,27 @@ Pass a `RealTimeOptions` instance to tune the client. All values are optional:
 ```csharp
 var options = new RealTimeOptions { Verbose = true, ConnectionTimeout = 10000 };
 var realtime = AlfredFactory.CreateRealTimeClient("your-api-key", EnvironmentType.Production, options);
+```
+
+## Handling Errors
+
+Every failed call throws an `ApiException`:
+
+| Property | Description |
+| --- | --- |
+| `StatusCode` | The HTTP status (`null` for a network error). For example 404 when the item is not in your account, 409 when the item is busy, 403 when your account's permissions refuse the action. |
+| `ErrorMessage` | The server's explanation, when it sent one. |
+| `ResponseContent` | The raw response body, for details such as the missing sources of a refused restart. |
+
+```csharp
+try
+{
+    await alfred.File.ReprocessAsync(fileId);
+}
+catch (ApiException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+{
+    Console.WriteLine($"Busy: {ex.ErrorMessage}");
+}
 ```
 
 # Notes

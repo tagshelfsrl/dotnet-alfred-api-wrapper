@@ -164,4 +164,87 @@ public class HttpApiClientTests
 
         Assert.Contains("dotnet-alfred-api-wrapper", client.GetDefaultHeaderValue("User-Agent"));
     }
+    // ---- Error bodies the API sends in other shapes ----
+
+    [Fact]
+    public async Task SendAsync_NotFoundWithEmptyBody_ThrowsApiException()
+    {
+        var handler = new FakeHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
+        var client = FakeHttpMessageHandler.Client(handler);
+
+        var ex = await Assert.ThrowsAsync<ApiException>(() => client.GetAsync<Sample>("api/thing"));
+
+        Assert.Equal(HttpStatusCode.NotFound, ex.StatusCode);
+        Assert.Null(ex.Error);
+        Assert.Null(ex.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task SendAsync_BareJsonStringError_BecomesTheMessage()
+    {
+        var handler = FakeHttpMessageHandler.Json("\"File must be classified with a tag before running extraction.\"", HttpStatusCode.BadRequest);
+        var client = FakeHttpMessageHandler.Client(handler);
+
+        var ex = await Assert.ThrowsAsync<ApiException>(() => client.PostAsync<Sample>("api/thing"));
+
+        Assert.Equal("File must be classified with a tag before running extraction.", ex.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task SendAsync_PascalCaseMessage_IsRead()
+    {
+        // The server's global exception filter answers { "Message": ... }.
+        var handler = FakeHttpMessageHandler.Json("""{ "Message": "An error has occurred." }""", HttpStatusCode.InternalServerError);
+        var client = FakeHttpMessageHandler.Client(handler);
+
+        var ex = await Assert.ThrowsAsync<ApiException>(() => client.GetAsync<Sample>("api/thing"));
+
+        Assert.Equal("An error has occurred.", ex.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task SendAsync_NonJsonError_KeepsRawText()
+    {
+        var handler = new FakeHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.BadGateway)
+        {
+            Content = new StringContent("<html>Bad gateway</html>", Encoding.UTF8, "text/html")
+        });
+        var client = FakeHttpMessageHandler.Client(handler);
+
+        var ex = await Assert.ThrowsAsync<ApiException>(() => client.GetAsync<Sample>("api/thing"));
+
+        Assert.Equal(HttpStatusCode.BadGateway, ex.StatusCode);
+        Assert.Equal("<html>Bad gateway</html>", ex.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_SendsDelete_AndToleratesEmptyBody()
+    {
+        var handler = new FakeHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
+        var client = FakeHttpMessageHandler.Client(handler);
+
+        var result = await client.DeleteAsync<Sample>("api/thing/1");
+
+        Assert.Null(result);
+        Assert.Equal(HttpMethod.Delete, handler.LastRequest!.Method);
+    }
+
+    [Fact]
+    public async Task RequestSigner_RunsOnAbsoluteUri_BeforeSending()
+    {
+        var handler = FakeHttpMessageHandler.Json("""{ "value": "ok" }""");
+        var client = FakeHttpMessageHandler.Client(handler);
+        Uri? seen = null;
+        client.RequestSigner = request =>
+        {
+            seen = request.RequestUri;
+            request.Headers.Add("X-Signed", "yes");
+            return Task.CompletedTask;
+        };
+
+        await client.GetAsync<Sample>("api/thing?a=1");
+
+        Assert.Equal("https://example.test/api/thing?a=1", seen!.AbsoluteUri);
+        Assert.True(handler.LastRequest!.Headers.Contains("X-Signed"));
+    }
 }

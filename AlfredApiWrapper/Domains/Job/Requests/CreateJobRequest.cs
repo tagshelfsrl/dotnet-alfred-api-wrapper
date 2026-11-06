@@ -39,8 +39,20 @@ namespace TagShelf.Alfred.ApiWrapper.Domains.Job.Requests
         [JsonProperty("file_names")]
         public List<string> FileNames { get; set; }
         
+        /// <summary>
+        /// The job's priority. Leave null to use the tenant's configured default priority; a value set
+        /// here is ignored when the tenant forces its default.
+        /// </summary>
         [JsonProperty("priority")]
-        public JobPriority JobPriority { get; set; } = JobPriority.Normal;
+        public JobPriority? JobPriority { get; set; }
+
+        /// <summary>
+        /// An optional ID of the operation that submitted the job in your system (for example an ERP
+        /// transaction or an email Message-ID), at most 512 characters. It is returned on the job and can
+        /// be used to find the job with <see cref="JobDomain.GetAllAsync"/>. Alfred does not deduplicate on it.
+        /// </summary>
+        [JsonProperty("correlation_id")]
+        public string CorrelationId { get; set; }
 
     }
 }

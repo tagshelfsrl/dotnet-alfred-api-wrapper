@@ -81,9 +81,31 @@ public class DomainTests
         Assert.Equal(HttpMethod.Post, handler.LastRequest!.Method);
         Assert.EndsWith("api/job/create", handler.LastRequest.RequestUri!.ToString());
         Assert.Contains("session_id", handler.LastRequestBody);
-        Assert.Contains("\"priority\":\"normal\"", handler.LastRequestBody);
+        // No priority set -> none sent, so the tenant's configured default applies.
+        Assert.DoesNotContain("\"priority\"", handler.LastRequestBody);
         // Null-valued optional properties must be omitted.
         Assert.DoesNotContain("\"merge\"", handler.LastRequestBody);
+        Assert.DoesNotContain("\"correlation_id\"", handler.LastRequestBody);
+    }
+
+    [Fact]
+    public async Task Job_CreateAsync_SendsPriorityAndCorrelationId_AndReadsCorrelationIdBack()
+    {
+        var handler = FakeHttpMessageHandler.Json(
+            $$"""{ "job_id": "{{Guid.NewGuid()}}", "correlation_id": "erp:INV-1042" }""");
+        var domain = new JobDomain(FakeHttpMessageHandler.Client(handler));
+        var request = new CreateJobRequest
+        {
+            SessionId = Guid.NewGuid(),
+            JobPriority = JobPriority.Urgent,
+            CorrelationId = "erp:INV-1042"
+        };
+
+        var result = await domain.CreateAsync(request);
+
+        Assert.Contains("\"priority\":\"urgent\"", handler.LastRequestBody);
+        Assert.Contains("\"correlation_id\":\"erp:INV-1042\"", handler.LastRequestBody);
+        Assert.Equal("erp:INV-1042", result.CorrelationId);
     }
 
     [Fact]

@@ -47,16 +47,15 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         /// <param name="environment">Specifies the environment the Alfred client will target, defaulting to Production.</param>
         /// <returns>A task that represents the asynchronous operation, returning an initialized Alfred instance configured for HMAC authentication.</returns>
         /// <remarks>
-        /// This method initializes an Alfred instance with HMAC authentication, which involves computing a signature for each request based on the provided secretKey and apiKey.
-        /// The actual request signing process should be integrated into the HttpApiClient's request handling, potentially using middleware or custom request handlers to inject the 'Authentication' header with the computed HMAC signature into each outgoing request.
+        /// Every request the returned instance sends is signed on its own (see <see cref="HmacAuthentication"/>), so
+        /// the machine's clock must be within five minutes of the server's.
         /// </remarks>
-        public static async Task<Alfred> CreateWithHmacAsync(string secretKey, string apiKey, EnvironmentType environment = EnvironmentType.Production)
+        public static Task<Alfred> CreateWithHmacAsync(string secretKey, string apiKey, EnvironmentType environment = EnvironmentType.Production)
         {
+            var hmac = new HmacAuthentication(secretKey, apiKey);
             var alfred = new Alfred(environment);
-            // Assuming HttpApiClient has a method to intercept and modify requests for HMAC signing
-            // This is a placeholder for where you would integrate HMAC signing into the request process
-            // For actual request signing, consider middleware or handlers depending on your HTTP client setup
-            return alfred;
+            alfred.ApiClient.RequestSigner = hmac.SignAsync;
+            return Task.FromResult(alfred);
         }
 
         /// <summary>
