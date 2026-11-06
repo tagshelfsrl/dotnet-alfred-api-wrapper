@@ -3,6 +3,8 @@ using TagShelf.Alfred.ApiWrapper.Domains.DataPoint;
 using TagShelf.Alfred.ApiWrapper.Domains.DeferredSession;
 using TagShelf.Alfred.ApiWrapper.Domains.File;
 using TagShelf.Alfred.ApiWrapper.Domains.Job;
+using TagShelf.Alfred.ApiWrapper.Domains.RemoteSource;
+using TagShelf.Alfred.ApiWrapper.Domains.Search;
 using TagShelf.Alfred.ApiWrapper.Domains.Tag;
 using TagShelf.Alfred.ApiWrapper.Domains.Tagshelf;
 
@@ -47,5 +49,15 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         /// Provides access to tag-related operations.
         /// </summary>
         TagDomain Tag { get; }
+
+        /// <summary>
+        /// Provides access to document search.
+        /// </summary>
+        SearchDomain Search { get; }
+
+        /// <summary>
+        /// Provides access to remote sources: cloud storage locations uploads can read files from.
+        /// </summary>
+        RemoteSourceDomain RemoteSource { get; }
     }
 }

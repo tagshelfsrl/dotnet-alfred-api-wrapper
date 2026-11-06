@@ -4,6 +4,8 @@ using TagShelf.Alfred.ApiWrapper.Domains.DataPoint;
 using TagShelf.Alfred.ApiWrapper.Domains.DeferredSession;
 using TagShelf.Alfred.ApiWrapper.Domains.File;
 using TagShelf.Alfred.ApiWrapper.Domains.Job;
+using TagShelf.Alfred.ApiWrapper.Domains.RemoteSource;
+using TagShelf.Alfred.ApiWrapper.Domains.Search;
 using TagShelf.Alfred.ApiWrapper.Domains.Tag;
 using TagShelf.Alfred.ApiWrapper.Domains.Tagshelf;
 using TagShelf.Alfred.ApiWrapper.Enumerations;
@@ -69,6 +71,8 @@ namespace TagShelf.Alfred.ApiWrapper.Core
             DeferredSession = new DeferredSessionDomain(ApiClient);
             DataPoint = new DataPointDomain(ApiClient);
             Tag = new TagDomain(ApiClient);
+            Search = new SearchDomain(ApiClient);
+            RemoteSource = new RemoteSourceDomain(ApiClient);
         }
 
         #region IAlfred implementation
@@ -79,6 +83,8 @@ namespace TagShelf.Alfred.ApiWrapper.Core
         public DeferredSessionDomain DeferredSession { get; private set; }
         public DataPointDomain DataPoint { get; private set; }
         public TagDomain Tag { get; private set; }
+        public SearchDomain Search { get; private set; }
+        public RemoteSourceDomain RemoteSource { get; private set; }
         #endregion
     }
 }
