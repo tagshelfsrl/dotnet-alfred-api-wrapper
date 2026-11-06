@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using Newtonsoft.Json;
 using TagShelf.Alfred.ApiWrapper.Core;
 using TagShelf.Alfred.ApiWrapper.Domains.Account.Requests;
 using TagShelf.Alfred.ApiWrapper.Domains.Account.Results;
+using TagShelf.Alfred.ApiWrapper.Domains.Tag.Results;
 
 namespace TagShelf.Alfred.ApiWrapper.Domains
 {
@@ -30,6 +32,29 @@ namespace TagShelf.Alfred.ApiWrapper.Domains
 
             var response = await _apiClient.PostAsync<WebhookSetupResult>("/api/account/webhook", content);
             return response;
+        }
+
+        /// <summary>
+        /// Lists the accounts (tenants) the caller has access to. An API key belongs to one account; a user
+        /// signed in with OAuth or HMAC may have access to several.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the accounts.</returns>
+        public async Task<List<CompanyResult>> GetCompaniesAsync()
+        {
+            return await _apiClient.GetAsync<List<CompanyResult>>("api/account/companies").ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Lists the tags the caller can see in an account.
+        /// </summary>
+        /// <param name="companyId">
+        /// The account to list tags for; one of <see cref="GetCompaniesAsync"/>. Leave null for the caller's own account.
+        /// </param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the tags' IDs, names and descriptions.</returns>
+        public async Task<List<TagResult>> GetTagsAsync(Guid? companyId = null)
+        {
+            var uri = companyId.HasValue ? $"api/account/tags/{companyId.Value}" : "api/account/tags";
+            return await _apiClient.GetAsync<List<TagResult>>(uri).ConfigureAwait(false);
         }
     }
 }
