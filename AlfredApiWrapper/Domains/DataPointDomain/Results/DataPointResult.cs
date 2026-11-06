@@ -30,6 +30,13 @@ namespace TagShelf.Alfred.ApiWrapper.Domains.DataPoint.Results
         public double ClassificationScore { get; set; }
 
         /// <summary>
+        /// The extractor's original output, present only when formatting rules changed it. When null,
+        /// <see cref="Value"/> is the original.
+        /// </summary>
+        [JsonProperty("extracted_value")]
+        public string ExtractedValue { get; set; }
+
+        /// <summary>
         /// The normalized form of <see cref="Value"/>, when the platform produced one.
         /// </summary>
         [JsonProperty("normalized_value")]
