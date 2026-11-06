@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 
 namespace TagShelf.Alfred.ApiWrapper.Domains.File.Results
@@ -94,6 +95,61 @@ namespace TagShelf.Alfred.ApiWrapper.Domains.File.Results
 
         [JsonProperty("manual_classification")]
         public bool ManualClassification { get; set; }
+
+        /// <summary>A description of the file's content, when one was generated.</summary>
+        [JsonProperty("description")]
+        public string Description { get; set; }
+
+        /// <summary>How the file entered Alfred (for example "original" or "derived").</summary>
+        [JsonProperty("input_type")]
+        public string InputType { get; set; }
+
+        /// <summary>How data was extracted from the file (for example "none" or "multimodal").</summary>
+        [JsonProperty("extraction_type")]
+        public string ExtractionType { get; set; }
+
+        /// <summary>Whether the file's extracted data duplicates another file's.</summary>
+        [JsonProperty("is_data_duplicate")]
+        public bool IsDataDuplicate { get; set; }
+
+        /// <summary>Whether the file duplicates another file by its data point values.</summary>
+        [JsonProperty("is_duplicate_by_values")]
+        public bool IsDuplicateByValues { get; set; }
+
+        /// <summary>
+        /// The file's own metadata as JSON (usually an object), or null when it has none. Read it with
+        /// <c>Metadata?["key"]</c> or <c>Metadata?.ToObject&lt;T&gt;()</c>.
+        /// </summary>
+        [JsonProperty("metadata")]
+        public JToken Metadata { get; set; }
+
+        /// <summary>The metadata that applies to the file, including what it inherits from its job, as JSON text.</summary>
+        [JsonProperty("effective_metadata")]
+        public string EffectiveMetadata { get; set; }
+
+        /// <summary>The file's position within its job.</summary>
+        [JsonProperty("job_order_index")]
+        public int JobOrderIndex { get; set; }
+
+        /// <summary>The number of pages in the file.</summary>
+        [JsonProperty("page_count")]
+        public int PageCount { get; set; }
+
+        /// <summary>For a page split from a larger document, its page number in that document.</summary>
+        [JsonProperty("page_number")]
+        public int PageNumber { get; set; }
+
+        /// <summary>Who the file is assigned to for review; empty when nobody is.</summary>
+        [JsonProperty("assigned_to")]
+        public string AssignedTo { get; set; }
+
+        /// <summary>When the file was assigned for review (UTC), or null when it was not.</summary>
+        [JsonProperty("assignment_date")]
+        public DateTime? AssignmentDate { get; set; }
+
+        /// <summary>When the file was validated (UTC), or null when it has not been.</summary>
+        [JsonProperty("validation_date")]
+        public DateTime? ValidationDate { get; set; }
 
         /// <summary>
         /// Returns a string that represents the current object.
